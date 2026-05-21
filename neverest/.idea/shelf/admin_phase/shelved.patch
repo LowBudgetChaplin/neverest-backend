@@ -1,0 +1,1066 @@
+Index: .idea/jarRepositories.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/jarRepositories.xml b/.idea/jarRepositories.xml
+new file mode 100644
+--- /dev/null	(date 1772136382870)
++++ b/.idea/jarRepositories.xml	(date 1772136382870)
+@@ -0,0 +1,20 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="RemoteRepositoriesConfiguration">
++    <remote-repository>
++      <option name="id" value="central" />
++      <option name="name" value="Central Repository" />
++      <option name="url" value="https://repo.maven.apache.org/maven2" />
++    </remote-repository>
++    <remote-repository>
++      <option name="id" value="central" />
++      <option name="name" value="Maven Central repository" />
++      <option name="url" value="https://repo1.maven.org/maven2" />
++    </remote-repository>
++    <remote-repository>
++      <option name="id" value="jboss.community" />
++      <option name="name" value="JBoss Community repository" />
++      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
++    </remote-repository>
++  </component>
++</project>
+\ No newline at end of file
+Index: HELP.md
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/HELP.md b/HELP.md
+new file mode 100644
+--- /dev/null	(date 1772135969000)
++++ b/HELP.md	(date 1772135969000)
+@@ -0,0 +1,30 @@
++# Getting Started
++
++### Reference Documentation
++For further reference, please consider the following sections:
++
++* [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
++* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/4.0.3/maven-plugin)
++* [Create an OCI image](https://docs.spring.io/spring-boot/4.0.3/maven-plugin/build-image.html)
++* [Spring Web](https://docs.spring.io/spring-boot/4.0.3/reference/web/servlet.html)
++* [Spring Security](https://docs.spring.io/spring-boot/4.0.3/reference/web/spring-security.html)
++* [Spring Data JPA](https://docs.spring.io/spring-boot/4.0.3/reference/data/sql.html#data.sql.jpa-and-spring-data)
++
++### Guides
++The following guides illustrate how to use some features concretely:
++
++* [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
++* [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
++* [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
++* [Securing a Web Application](https://spring.io/guides/gs/securing-web/)
++* [Spring Boot and OAuth2](https://spring.io/guides/tutorials/spring-boot-oauth2/)
++* [Authenticating a User with LDAP](https://spring.io/guides/gs/authenticating-ldap/)
++* [Accessing Data with JPA](https://spring.io/guides/gs/accessing-data-jpa/)
++
++### Maven Parent overrides
++
++Due to Maven's design, elements are inherited from the parent POM to the project POM.
++While most of the inheritance is fine, it also inherits unwanted elements like `<license>` and `<developers>` from the parent.
++To prevent this, the project POM contains empty overrides for these elements.
++If you manually switch to a different parent and actually want the inheritance, you need to remove those overrides.
++
+Index: target/test-classes/application.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/target/test-classes/application.properties b/target/test-classes/application.properties
+new file mode 100644
+--- /dev/null	(date 1774991151182)
++++ b/target/test-classes/application.properties	(date 1774991151182)
+@@ -0,0 +1,12 @@
++spring.datasource.url=jdbc:h2:mem:neverest-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
++spring.datasource.username=sa
++spring.datasource.password=
++spring.datasource.driver-class-name=org.h2.Driver
++spring.jpa.hibernate.ddl-auto=validate
++spring.jpa.open-in-view=false
++spring.flyway.enabled=true
++spring.flyway.locations=classpath:db/migration
++neverest.auth.provider=none
++neverest.integrations.whatsapp.enabled=false
++neverest.integrations.strava.enabled=false
++neverest.integrations.retry.enabled=false
+Index: target/classes/db/migration/V1__init_schema.sql
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/classes/db/migration/V1__init_schema.sql b/target/classes/db/migration/V1__init_schema.sql
+new file mode 100644
+--- /dev/null	(date 1774991146519)
++++ b/target/classes/db/migration/V1__init_schema.sql	(date 1774991146519)
+@@ -0,0 +1,140 @@
++create table if not exists nev_users (
++    id uuid primary key,
++    display_name varchar(120) not null,
++    qr_code varchar(32) not null unique,
++    auth_subject varchar(200) unique,
++    total_points integer not null,
++    available_points integer not null,
++    points_padel integer not null,
++    points_mountain integer not null,
++    points_running integer not null,
++    created_at timestamp not null
++);
++
++create index if not exists idx_nev_users_display_name on nev_users(display_name);
++
++create table if not exists nev_events (
++    id uuid primary key,
++    title varchar(180) not null,
++    activity_type varchar(32) not null,
++    location varchar(200) not null,
++    starts_at timestamp not null,
++    points_reward integer not null,
++    created_at timestamp not null
++);
++
++create index if not exists idx_nev_events_starts_at on nev_events(starts_at);
++
++create table if not exists nev_event_checkins (
++    id uuid primary key,
++    event_id uuid not null,
++    user_id uuid not null,
++    checked_in_at timestamp not null,
++    constraint fk_nev_event_checkins_event foreign key (event_id) references nev_events(id),
++    constraint fk_nev_event_checkins_user foreign key (user_id) references nev_users(id),
++    constraint uk_nev_event_checkins_event_user unique (event_id, user_id)
++);
++
++create index if not exists idx_nev_event_checkins_event on nev_event_checkins(event_id);
++create index if not exists idx_nev_event_checkins_user on nev_event_checkins(user_id);
++
++create table if not exists nev_challenges (
++    id uuid primary key,
++    title varchar(180) not null,
++    description varchar(600) not null,
++    activity_type varchar(32) not null,
++    mode varchar(32) not null,
++    frequency varchar(32) not null,
++    starts_at timestamp null,
++    ends_at timestamp null,
++    points_reward integer not null,
++    target_value double precision null,
++    target_unit varchar(64) null,
++    created_at timestamp not null
++);
++
++create index if not exists idx_nev_challenges_starts_at on nev_challenges(starts_at);
++
++create table if not exists nev_challenge_submissions (
++    id uuid primary key,
++    challenge_id uuid not null,
++    user_id uuid not null,
++    proof_text varchar(1000) null,
++    metric_value double precision null,
++    submitted_at timestamp not null,
++    status varchar(32) not null,
++    awarded_points integer not null,
++    reviewed_at timestamp null,
++    reviewer_note varchar(600) null,
++    constraint fk_nev_challenge_submissions_challenge foreign key (challenge_id) references nev_challenges(id),
++    constraint fk_nev_challenge_submissions_user foreign key (user_id) references nev_users(id),
++    constraint uk_nev_challenge_submissions_challenge_user unique (challenge_id, user_id)
++);
++
++create index if not exists idx_nev_challenge_submissions_challenge on nev_challenge_submissions(challenge_id);
++create index if not exists idx_nev_challenge_submissions_user on nev_challenge_submissions(user_id);
++
++create table if not exists nev_rewards (
++    id uuid primary key,
++    title varchar(180) not null,
++    partner_name varchar(180) not null,
++    description varchar(700) not null,
++    points_cost integer not null,
++    stock integer null,
++    active boolean not null,
++    version bigint not null,
++    created_at timestamp not null
++);
++
++create index if not exists idx_nev_rewards_title on nev_rewards(title);
++
++create table if not exists nev_reward_redemptions (
++    id uuid primary key,
++    reward_id uuid not null,
++    user_id uuid not null,
++    reward_title varchar(180) not null,
++    points_spent integer not null,
++    redemption_code varchar(40) not null unique,
++    redeemed_at timestamp not null,
++    user_available_points_after_redemption integer not null,
++    constraint fk_nev_reward_redemptions_reward foreign key (reward_id) references nev_rewards(id),
++    constraint fk_nev_reward_redemptions_user foreign key (user_id) references nev_users(id)
++);
++
++create index if not exists idx_nev_reward_redemptions_user on nev_reward_redemptions(user_id);
++create index if not exists idx_nev_reward_redemptions_redeemed_at on nev_reward_redemptions(redeemed_at);
++
++create table if not exists nev_audit_logs (
++    id uuid primary key,
++    created_at timestamp not null,
++    action varchar(80) not null,
++    actor varchar(220) not null,
++    success boolean not null,
++    message varchar(700) not null,
++    metadata_encoded varchar(4000) not null
++);
++
++create index if not exists idx_nev_audit_logs_created_at on nev_audit_logs(created_at);
++create index if not exists idx_nev_audit_logs_action on nev_audit_logs(action);
++create index if not exists idx_nev_audit_logs_actor on nev_audit_logs(actor);
++
++create table if not exists nev_announcement_tasks (
++    id uuid primary key,
++    event_id uuid not null,
++    channel varchar(32) not null,
++    payload varchar(4000) not null,
++    status varchar(32) not null,
++    attempt_count integer not null,
++    max_attempts integer not null,
++    next_attempt_at timestamp not null,
++    last_attempt_at timestamp null,
++    last_status_code integer null,
++    last_error varchar(700) null,
++    created_at timestamp not null,
++    updated_at timestamp not null,
++    constraint fk_nev_announcement_tasks_event foreign key (event_id) references nev_events(id),
++    constraint uk_nev_announcement_tasks_event_channel unique (event_id, channel)
++);
++
++create index if not exists idx_nev_announcement_tasks_status_next_attempt
++    on nev_announcement_tasks(status, next_attempt_at);
+Index: target/classes/application-postgres.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/target/classes/application-postgres.properties b/target/classes/application-postgres.properties
+new file mode 100644
+--- /dev/null	(date 1774992245852)
++++ b/target/classes/application-postgres.properties	(date 1774992245852)
+@@ -0,0 +1,8 @@
++spring.datasource.url=${NEV_DB_URL:jdbc:postgresql://localhost:5432/neverest}
++spring.datasource.username=${NEV_DB_USER:postgres}
++spring.datasource.password=${NEV_DB_PASSWORD:postgres}
++spring.datasource.driver-class-name=org.postgresql.Driver
++spring.jpa.hibernate.ddl-auto=validate
++spring.jpa.open-in-view=false
++spring.flyway.enabled=true
++spring.flyway.locations=classpath:db/migration
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+new file mode 100644
+--- /dev/null	(date 1772136171270)
++++ b/.idea/misc.xml	(date 1772136171270)
+@@ -0,0 +1,15 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="ExternalStorageConfigurationManager" enabled="true" />
++  <component name="MavenProjectsManager">
++    <option name="originalFiles">
++      <list>
++        <option value="$PROJECT_DIR$/pom.xml" />
++      </list>
++    </option>
++  </component>
++  <component name="ProjectRootManager" version="2" project-jdk-name="openjdk-16" project-jdk-type="JavaSDK" />
++  <component name="ProjectType">
++    <option name="id" value="jpab" />
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/jpa-buddy.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/jpa-buddy.xml b/.idea/jpa-buddy.xml
+new file mode 100644
+--- /dev/null	(date 1772136382860)
++++ b/.idea/jpa-buddy.xml	(date 1772136382860)
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="JpaBuddyIdeaProjectConfig">
++    <option name="defaultUnitInitialized" value="true" />
++    <option name="renamerInitialized" value="true" />
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/vcs.xml b/.idea/vcs.xml
+new file mode 100644
+--- /dev/null	(date 1772136171338)
++++ b/.idea/vcs.xml	(date 1772136171338)
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="VcsDirectoryMappings">
++    <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
++  </component>
++</project>
+\ No newline at end of file
+Index: target/surefire-reports/TEST-com.app.neverest.api.SecurityAuthorizationTests.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/surefire-reports/TEST-com.app.neverest.api.SecurityAuthorizationTests.xml b/target/surefire-reports/TEST-com.app.neverest.api.SecurityAuthorizationTests.xml
+new file mode 100644
+--- /dev/null	(date 1774992538138)
++++ b/target/surefire-reports/TEST-com.app.neverest.api.SecurityAuthorizationTests.xml	(date 1774992538138)
+@@ -0,0 +1,133 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.app.neverest.api.SecurityAuthorizationTests" time="8.439" tests="6" errors="0" skipped="0" failures="0">
++  <properties>
++    <property name="java.specification.version" value="21"/>
++    <property name="sun.cpu.isalist" value="amd64"/>
++    <property name="sun.jnu.encoding" value="Cp1252"/>
++    <property name="java.class.path" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\test-classes;C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\classes;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.3\spring-boot-starter-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.3\spring-boot-starter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.3\spring-boot-starter-logging-4.0.3.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\serba\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.3\spring-boot-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\serba\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.3\spring-boot-starter-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.3\spring-boot-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-databind\3.0.4\jackson-databind-3.0.4.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-core\3.0.4\jackson-core-3.0.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.3\spring-boot-starter-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.3\spring-boot-starter-tomcat-runtime-4.0.3.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.18\tomcat-embed-core-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.18\tomcat-embed-el-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.18\tomcat-embed-websocket-11.0.18.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.3\spring-boot-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.3\spring-boot-http-converter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot\4.0.3\spring-boot-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-context\7.0.5\spring-context-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-web\7.0.5\spring-web-7.0.5.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-observation\1.16.3\micrometer-observation-1.16.3.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-commons\1.16.3\micrometer-commons-1.16.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.3\spring-boot-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.3\spring-boot-servlet-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-webmvc\7.0.5\spring-webmvc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-expression\7.0.5\spring-expression-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.3\spring-boot-starter-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.3\spring-boot-starter-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\serba\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.3\spring-boot-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.3\spring-boot-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.3\spring-boot-persistence-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-commons\4.0.3\spring-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.3\spring-boot-hibernate-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.3\spring-boot-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\serba\.m2\repository\org\hibernate\orm\hibernate-core\7.2.4.Final\hibernate-core-7.2.4.Final.jar;C:\Users\serba\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\jboss\logging\jboss-logging\3.6.2.Final\jboss-logging-3.6.2.Final.jar;C:\Users\serba\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\serba\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\serba\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\serba\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-orm\7.0.5\spring-orm-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-jpa\4.0.3\spring-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-tx\7.0.5\spring-tx-7.0.5.jar;C:\Users\serba\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aspects\7.0.5\spring-aspects-7.0.5.jar;C:\Users\serba\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.3\spring-boot-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.3\spring-boot-sql-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.3\spring-boot-transaction-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-jdbc\7.0.5\spring-jdbc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.3\spring-boot-starter-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security\4.0.3\spring-boot-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-config\7.0.3\spring-security-config-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-core\7.0.3\spring-security-core-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-crypto\7.0.3\spring-security-crypto-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-web\7.0.3\spring-security-web-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aop\7.0.5\spring-aop-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-beans\7.0.5\spring-beans-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-core\7.0.5\spring-core-7.0.5.jar;C:\Users\serba\.m2\repository\commons-logging\commons-logging\1.3.5\commons-logging-1.3.5.jar;C:\Users\serba\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-resource-server\4.0.3\spring-boot-starter-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-resource-server\4.0.3\spring-boot-security-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.3\spring-security-oauth2-jose-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.3\spring-security-oauth2-core-7.0.3.jar;C:\Users\serba\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-resource-server\7.0.3\spring-security-oauth2-resource-server-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.3\spring-boot-starter-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.3\spring-boot-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.20.2\jackson-databind-2.20.2.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.20\jackson-annotations-2.20.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.20.2\jackson-core-2.20.2.jar;C:\Users\serba\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\serba\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\serba\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.3\spring-boot-starter-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.3\spring-boot-starter-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test\4.0.3\spring-boot-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.3\spring-boot-test-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\serba\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\serba\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\serba\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\serba\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\serba\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\serba\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\serba\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\serba\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\serba\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\serba\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\serba\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\serba\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\serba\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-test\7.0.5\spring-test-7.0.5.jar;C:\Users\serba\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.3\spring-boot-starter-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.3\spring-boot-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.3\spring-boot-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.3\spring-boot-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.3\spring-boot-starter-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.3\spring-boot-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-test\7.0.3\spring-security-test-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.3\spring-boot-starter-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.3\spring-boot-starter-jackson-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.3\spring-boot-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.3\spring-boot-web-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.3\spring-boot-resttestclient-4.0.3.jar;"/>
++    <property name="java.vm.vendor" value="JetBrains s.r.o."/>
++    <property name="sun.arch.data.model" value="64"/>
++    <property name="user.variant" value=""/>
++    <property name="java.vendor.url" value="https://openjdk.org/"/>
++    <property name="user.timezone" value="Europe/Bucharest"/>
++    <property name="org.jboss.logging.provider" value="slf4j"/>
++    <property name="os.name" value="Windows 10"/>
++    <property name="java.vm.specification.version" value="21"/>
++    <property name="sun.java.launcher" value="SUN_STANDARD"/>
++    <property name="user.country" value="US"/>
++    <property name="sun.boot.library.path" value="C:\Program Files\Android\Android Studio\jbr\bin"/>
++    <property name="sun.java.command" value="C:\Users\serba\AppData\Local\Temp\surefire3193715945928273036\surefirebooter-20260401002848645_3.jar C:\Users\serba\AppData\Local\Temp\surefire3193715945928273036 2026-04-01T00-28-48_536-jvmRun1 surefire-20260401002848645_1tmp surefire_0-20260401002848645_2tmp"/>
++    <property name="jdk.debug" value="release"/>
++    <property name="surefire.test.class.path" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\test-classes;C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\classes;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.3\spring-boot-starter-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.3\spring-boot-starter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.3\spring-boot-starter-logging-4.0.3.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\serba\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.3\spring-boot-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\serba\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.3\spring-boot-starter-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.3\spring-boot-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-databind\3.0.4\jackson-databind-3.0.4.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-core\3.0.4\jackson-core-3.0.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.3\spring-boot-starter-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.3\spring-boot-starter-tomcat-runtime-4.0.3.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.18\tomcat-embed-core-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.18\tomcat-embed-el-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.18\tomcat-embed-websocket-11.0.18.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.3\spring-boot-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.3\spring-boot-http-converter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot\4.0.3\spring-boot-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-context\7.0.5\spring-context-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-web\7.0.5\spring-web-7.0.5.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-observation\1.16.3\micrometer-observation-1.16.3.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-commons\1.16.3\micrometer-commons-1.16.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.3\spring-boot-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.3\spring-boot-servlet-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-webmvc\7.0.5\spring-webmvc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-expression\7.0.5\spring-expression-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.3\spring-boot-starter-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.3\spring-boot-starter-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\serba\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.3\spring-boot-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.3\spring-boot-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.3\spring-boot-persistence-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-commons\4.0.3\spring-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.3\spring-boot-hibernate-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.3\spring-boot-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\serba\.m2\repository\org\hibernate\orm\hibernate-core\7.2.4.Final\hibernate-core-7.2.4.Final.jar;C:\Users\serba\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\jboss\logging\jboss-logging\3.6.2.Final\jboss-logging-3.6.2.Final.jar;C:\Users\serba\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\serba\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\serba\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\serba\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-orm\7.0.5\spring-orm-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-jpa\4.0.3\spring-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-tx\7.0.5\spring-tx-7.0.5.jar;C:\Users\serba\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aspects\7.0.5\spring-aspects-7.0.5.jar;C:\Users\serba\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.3\spring-boot-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.3\spring-boot-sql-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.3\spring-boot-transaction-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-jdbc\7.0.5\spring-jdbc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.3\spring-boot-starter-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security\4.0.3\spring-boot-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-config\7.0.3\spring-security-config-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-core\7.0.3\spring-security-core-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-crypto\7.0.3\spring-security-crypto-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-web\7.0.3\spring-security-web-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aop\7.0.5\spring-aop-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-beans\7.0.5\spring-beans-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-core\7.0.5\spring-core-7.0.5.jar;C:\Users\serba\.m2\repository\commons-logging\commons-logging\1.3.5\commons-logging-1.3.5.jar;C:\Users\serba\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-resource-server\4.0.3\spring-boot-starter-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-resource-server\4.0.3\spring-boot-security-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.3\spring-security-oauth2-jose-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.3\spring-security-oauth2-core-7.0.3.jar;C:\Users\serba\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-resource-server\7.0.3\spring-security-oauth2-resource-server-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.3\spring-boot-starter-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.3\spring-boot-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.20.2\jackson-databind-2.20.2.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.20\jackson-annotations-2.20.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.20.2\jackson-core-2.20.2.jar;C:\Users\serba\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\serba\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\serba\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.3\spring-boot-starter-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.3\spring-boot-starter-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test\4.0.3\spring-boot-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.3\spring-boot-test-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\serba\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\serba\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\serba\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\serba\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\serba\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\serba\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\serba\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\serba\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\serba\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\serba\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\serba\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\serba\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\serba\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-test\7.0.5\spring-test-7.0.5.jar;C:\Users\serba\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.3\spring-boot-starter-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.3\spring-boot-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.3\spring-boot-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.3\spring-boot-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.3\spring-boot-starter-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.3\spring-boot-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-test\7.0.3\spring-security-test-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.3\spring-boot-starter-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.3\spring-boot-starter-jackson-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.3\spring-boot-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.3\spring-boot-web-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.3\spring-boot-resttestclient-4.0.3.jar;"/>
++    <property name="sun.cpu.endian" value="little"/>
++    <property name="user.home" value="C:\Users\serba"/>
++    <property name="user.language" value="en"/>
++    <property name="java.specification.vendor" value="Oracle Corporation"/>
++    <property name="java.version.date" value="2025-04-15"/>
++    <property name="java.home" value="C:\Program Files\Android\Android Studio\jbr"/>
++    <property name="file.separator" value="\"/>
++    <property name="basedir" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest"/>
++    <property name="java.vm.compressedOopsMode" value="Zero based"/>
++    <property name="line.separator" value="&#10;"/>
++    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
++    <property name="java.specification.name" value="Java Platform API Specification"/>
++    <property name="intellij.os.virtualization" value="none"/>
++    <property name="FILE_LOG_CHARSET" value="UTF-8"/>
++    <property name="java.awt.headless" value="true"/>
++    <property name="jbr.virtualization.information" value="Hyper-V role"/>
++    <property name="surefire.real.class.path" value="C:\Users\serba\AppData\Local\Temp\surefire3193715945928273036\surefirebooter-20260401002848645_3.jar"/>
++    <property name="user.script" value=""/>
++    <property name="polyglot.engine.WarnInterpreterOnly" value="false"/>
++    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
++    <property name="java.runtime.version" value="21.0.7+-13880790-b1038.58"/>
++    <property name="user.name" value="serba"/>
++    <property name="stdout.encoding" value="Cp1252"/>
++    <property name="path.separator" value=";"/>
++    <property name="os.version" value="10.0"/>
++    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
++    <property name="file.encoding" value="UTF-8"/>
++    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
++    <property name="localRepository" value="C:\Users\serba\.m2\repository"/>
++    <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
++    <property name="java.io.tmpdir" value="C:\Users\serba\AppData\Local\Temp\"/>
++    <property name="com.zaxxer.hikari.pool_number" value="1"/>
++    <property name="java.version" value="21.0.7"/>
++    <property name="user.dir" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest"/>
++    <property name="os.arch" value="amd64"/>
++    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
++    <property name="PID" value="5128"/>
++    <property name="sun.os.patch.level" value=""/>
++    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
++    <property name="native.encoding" value="Cp1252"/>
++    <property name="java.library.path" value="C:\Program Files\Android\Android Studio\jbr\bin;C:\Windows\Sun\Java\bin;C:\Windows\system32;C:\Windows;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Program Files\Microsoft\jdk-11.0.12.7-hotspot\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\mingw64\bin;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Users\serba\AppData\Roaming\nvm;C:\Program Files\nodejs;A:\nodeJS;A:\Putty\;A:\Putty Bitwise SSH Client;C:\Program Files\dotnet\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\serba\OneDrive\Desktop\Master\Info_economica_master_sem1\Cloud_Computing_Critoma\java17\jdk-17.0.10\bin;C:\Program Files (x86)\Gpg4win\..\GnuPG\bin;A:\Git\cmd;C:\Users\serba\OneDrive\Desktop\Master\Info_economica_master_sem1\Cloud_Computing_Critoma\java17\jdk-17.0.10\bin;C:\Users\serba\AppData\Local\Programs\Python\Python311\Scripts\;C:\Users\serba\AppData\Local\Programs\Python\Python311\;C:\Program Files\MySQL\MySQL Shell 8.0\bin\;C:\Users\serba\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\serba\AppData\Local\Programs\Python\Python310\;C:\Users\serba\AppData\Local\Microsoft\WindowsApps;C:\OJI\FP\bin\i386-Win32;C:\MinGW\bin;C:\Users\serba\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2022.1\bin;;C:\src\flutter\bin;A:\SDK\platform-tools;A:\SDK\platforms;A:\WebStorm\WebStorm 2022.1\bin;;C:\Users\serba\OneDrive\Desktop\SmarTea\stripe_1.21.0_windows_x86_64;;A:\PyCharm 2022.3.1\bin;;C:\Users\serba\AppData\Roaming\npm;C:\Users\serba\AppData\Roaming\nvm;C:\Program Files\nodejs;A:\nodeJS;C:\Users\serba\AppData\Local\Programs\Hyper\resources\bin;C:\Program Files (x86)\MongoDB Atlas CLI\;C:\Users\serba\.dotnet\tools;C:\Rider\bin;A:\Cursor\cursor\resources\app\bin;."/>
++    <property name="java.vm.info" value="mixed mode"/>
++    <property name="stderr.encoding" value="Cp1252"/>
++    <property name="java.vendor" value="JetBrains s.r.o."/>
++    <property name="java.vm.version" value="21.0.7+-13880790-b1038.58"/>
++    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
++    <property name="java.class.version" value="65.0"/>
++  </properties>
++  <testcase name="normalUserCanReadChallenges" classname="com.app.neverest.api.SecurityAuthorizationTests" time="0.712">
++    <system-out><![CDATA[00:28:49.879 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.app.neverest.api.SecurityAuthorizationTests]: SecurityAuthorizationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++00:28:50.046 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.app.neverest.NeverestApplication for test class com.app.neverest.api.SecurityAuthorizationTests
++
++  .   ____          _            __ _ _
++ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
++( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
++ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
++  '  |____| .__|_| |_|_| |_\__, | / / / /
++ =========|_|==============|___/=/_/_/_/
++
++ :: Spring Boot ::                (v4.0.3)
++
++2026-04-01T00:28:50.576+03:00  INFO 5128 --- [           main] c.a.n.api.SecurityAuthorizationTests     : Starting SecurityAuthorizationTests using Java 21.0.7 with PID 5128 (started by serba in C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest)
++2026-04-01T00:28:50.578+03:00  INFO 5128 --- [           main] c.a.n.api.SecurityAuthorizationTests     : No active profile set, falling back to 1 default profile: "default"
++2026-04-01T00:28:51.333+03:00  INFO 5128 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
++2026-04-01T00:28:51.419+03:00  INFO 5128 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 75 ms. Found 9 JPA repository interfaces.
++2026-04-01T00:28:52.327+03:00  INFO 5128 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
++2026-04-01T00:28:52.568+03:00  INFO 5128 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:neverest-test user=SA
++2026-04-01T00:28:52.569+03:00  INFO 5128 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
++2026-04-01T00:28:52.626+03:00  INFO 5128 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:neverest-test (H2 2.4)
++2026-04-01T00:28:52.634+03:00  WARN 5128 --- [           main] o.f.c.internal.database.base.Database    : Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
++2026-04-01T00:28:52.669+03:00  INFO 5128 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
++2026-04-01T00:28:52.672+03:00  INFO 5128 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.016s)
++2026-04-01T00:28:52.683+03:00  INFO 5128 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
++2026-04-01T00:28:52.728+03:00  INFO 5128 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
++2026-04-01T00:28:52.753+03:00  INFO 5128 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - init schema"
++2026-04-01T00:28:52.797+03:00  INFO 5128 --- [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "PUBLIC", now at version v1 (execution time 00:00.031s)
++2026-04-01T00:28:52.938+03:00  INFO 5128 --- [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
++2026-04-01T00:28:53.023+03:00  INFO 5128 --- [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.4.Final
++2026-04-01T00:28:53.621+03:00  INFO 5128 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
++2026-04-01T00:28:53.699+03:00  INFO 5128 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
++	Database JDBC URL [jdbc:h2:mem:neverest-test]
++	Database driver: H2 JDBC Driver
++	Database dialect: H2Dialect
++	Database version: 2.4.240
++	Default catalog/schema: NEVEREST-TEST/PUBLIC
++	Autocommit mode: undefined/unknown
++	Isolation level: READ_COMMITTED [default READ_COMMITTED]
++	JDBC fetch size: 100
++	Pool: DataSourceConnectionProvider
++	Minimum pool size: undefined/unknown
++	Maximum pool size: undefined/unknown
++2026-04-01T00:28:54.718+03:00  INFO 5128 --- [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
++2026-04-01T00:28:54.746+03:00  INFO 5128 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
++2026-04-01T00:28:54.828+03:00  INFO 5128 --- [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
++2026-04-01T00:28:57.052+03:00  INFO 5128 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
++2026-04-01T00:28:57.052+03:00  INFO 5128 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
++2026-04-01T00:28:57.054+03:00  INFO 5128 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
++2026-04-01T00:28:57.083+03:00  INFO 5128 --- [           main] c.a.n.api.SecurityAuthorizationTests     : Started SecurityAuthorizationTests in 6.827 seconds (process running for 8.293)
++]]></system-out>
++    <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
++WARNING: A Java agent has been loaded dynamically (C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar)
++WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
++WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
++WARNING: Dynamic loading of agents will be disallowed by default in a future release
++]]></system-err>
++  </testcase>
++  <testcase name="normalUserCannotCreateEvent" classname="com.app.neverest.api.SecurityAuthorizationTests" time="0.011"/>
++  <testcase name="normalUserCannotReadAdminAuditLogs" classname="com.app.neverest.api.SecurityAuthorizationTests" time="0.006"/>
++  <testcase name="adminCanReadAdminAuditLogs" classname="com.app.neverest.api.SecurityAuthorizationTests" time="0.042"/>
++  <testcase name="unauthenticatedCannotAccessProtectedEndpoint" classname="com.app.neverest.api.SecurityAuthorizationTests" time="0.009"/>
++  <testcase name="adminCanCreateEvent" classname="com.app.neverest.api.SecurityAuthorizationTests" time="0.201"/>
++</testsuite>
+\ No newline at end of file
+Index: .idea/.gitignore
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/.gitignore b/.idea/.gitignore
+new file mode 100644
+--- /dev/null	(date 1772136171476)
++++ b/.idea/.gitignore	(date 1772136171476)
+@@ -0,0 +1,3 @@
++# Default ignored files
++/shelf/
++/workspace.xml
+Index: target/surefire-reports/com.app.neverest.api.SecurityAuthorizationTests.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/surefire-reports/com.app.neverest.api.SecurityAuthorizationTests.txt b/target/surefire-reports/com.app.neverest.api.SecurityAuthorizationTests.txt
+new file mode 100644
+--- /dev/null	(date 1774992538105)
++++ b/target/surefire-reports/com.app.neverest.api.SecurityAuthorizationTests.txt	(date 1774992538105)
+@@ -0,0 +1,4 @@
++-------------------------------------------------------------------------------
++Test set: com.app.neverest.api.SecurityAuthorizationTests
++-------------------------------------------------------------------------------
++Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.439 s -- in com.app.neverest.api.SecurityAuthorizationTests
+Index: target/classes/application.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/target/classes/application.properties b/target/classes/application.properties
+new file mode 100644
+--- /dev/null	(date 1774991532057)
++++ b/target/classes/application.properties	(date 1774991532057)
+@@ -0,0 +1,21 @@
++spring.application.name=neverest
++spring.datasource.url=${NEV_DB_URL:jdbc:h2:mem:neverest;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
++spring.datasource.username=${NEV_DB_USER:sa}
++spring.datasource.password=${NEV_DB_PASSWORD:}
++spring.datasource.driver-class-name=${NEV_DB_DRIVER:org.h2.Driver}
++spring.jpa.hibernate.ddl-auto=validate
++spring.jpa.open-in-view=false
++spring.flyway.enabled=true
++spring.flyway.locations=classpath:db/migration
++neverest.auth.provider=none
++neverest.firebase.project-id=
++neverest.integrations.whatsapp.enabled=false
++neverest.integrations.whatsapp.webhook-url=
++neverest.integrations.strava.enabled=false
++neverest.integrations.strava.webhook-url=
++neverest.integrations.timeout-seconds=5
++neverest.integrations.retry.enabled=true
++neverest.integrations.retry.fixed-delay-ms=60000
++neverest.integrations.retry.batch-size=25
++neverest.integrations.retry.max-attempts=5
++neverest.integrations.retry.backoff-seconds=120
+Index: target/surefire-reports/com.app.neverest.service.NeverestCoreServiceTests.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/surefire-reports/com.app.neverest.service.NeverestCoreServiceTests.txt b/target/surefire-reports/com.app.neverest.service.NeverestCoreServiceTests.txt
+new file mode 100644
+--- /dev/null	(date 1774992539194)
++++ b/target/surefire-reports/com.app.neverest.service.NeverestCoreServiceTests.txt	(date 1774992539194)
+@@ -0,0 +1,4 @@
++-------------------------------------------------------------------------------
++Test set: com.app.neverest.service.NeverestCoreServiceTests
++-------------------------------------------------------------------------------
++Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.194 s -- in com.app.neverest.service.NeverestCoreServiceTests
+Index: target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst b/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst
+new file mode 100644
+--- /dev/null	(date 1774992527055)
++++ b/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst	(date 1774992527055)
+@@ -0,0 +1,3 @@
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\test\java\com\app\neverest\api\SecurityAuthorizationTests.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\test\java\com\app\neverest\NeverestApplicationTests.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\test\java\com\app\neverest\service\NeverestCoreServiceTests.java
+Index: target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst b/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst
+new file mode 100644
+--- /dev/null	(date 1774992528421)
++++ b/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst	(date 1774992528421)
+@@ -0,0 +1,3 @@
++com\app\neverest\service\NeverestCoreServiceTests.class
++com\app\neverest\NeverestApplicationTests.class
++com\app\neverest\api\SecurityAuthorizationTests.class
+Index: target/surefire-reports/TEST-com.app.neverest.NeverestApplicationTests.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/surefire-reports/TEST-com.app.neverest.NeverestApplicationTests.xml b/target/surefire-reports/TEST-com.app.neverest.NeverestApplicationTests.xml
+new file mode 100644
+--- /dev/null	(date 1774992539018)
++++ b/target/surefire-reports/TEST-com.app.neverest.NeverestApplicationTests.xml	(date 1774992539018)
+@@ -0,0 +1,114 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.app.neverest.NeverestApplicationTests" time="0.892" tests="1" errors="0" skipped="0" failures="0">
++  <properties>
++    <property name="java.specification.version" value="21"/>
++    <property name="sun.cpu.isalist" value="amd64"/>
++    <property name="sun.jnu.encoding" value="Cp1252"/>
++    <property name="java.class.path" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\test-classes;C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\classes;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.3\spring-boot-starter-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.3\spring-boot-starter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.3\spring-boot-starter-logging-4.0.3.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\serba\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.3\spring-boot-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\serba\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.3\spring-boot-starter-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.3\spring-boot-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-databind\3.0.4\jackson-databind-3.0.4.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-core\3.0.4\jackson-core-3.0.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.3\spring-boot-starter-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.3\spring-boot-starter-tomcat-runtime-4.0.3.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.18\tomcat-embed-core-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.18\tomcat-embed-el-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.18\tomcat-embed-websocket-11.0.18.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.3\spring-boot-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.3\spring-boot-http-converter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot\4.0.3\spring-boot-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-context\7.0.5\spring-context-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-web\7.0.5\spring-web-7.0.5.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-observation\1.16.3\micrometer-observation-1.16.3.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-commons\1.16.3\micrometer-commons-1.16.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.3\spring-boot-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.3\spring-boot-servlet-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-webmvc\7.0.5\spring-webmvc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-expression\7.0.5\spring-expression-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.3\spring-boot-starter-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.3\spring-boot-starter-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\serba\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.3\spring-boot-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.3\spring-boot-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.3\spring-boot-persistence-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-commons\4.0.3\spring-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.3\spring-boot-hibernate-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.3\spring-boot-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\serba\.m2\repository\org\hibernate\orm\hibernate-core\7.2.4.Final\hibernate-core-7.2.4.Final.jar;C:\Users\serba\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\jboss\logging\jboss-logging\3.6.2.Final\jboss-logging-3.6.2.Final.jar;C:\Users\serba\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\serba\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\serba\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\serba\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-orm\7.0.5\spring-orm-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-jpa\4.0.3\spring-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-tx\7.0.5\spring-tx-7.0.5.jar;C:\Users\serba\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aspects\7.0.5\spring-aspects-7.0.5.jar;C:\Users\serba\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.3\spring-boot-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.3\spring-boot-sql-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.3\spring-boot-transaction-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-jdbc\7.0.5\spring-jdbc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.3\spring-boot-starter-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security\4.0.3\spring-boot-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-config\7.0.3\spring-security-config-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-core\7.0.3\spring-security-core-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-crypto\7.0.3\spring-security-crypto-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-web\7.0.3\spring-security-web-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aop\7.0.5\spring-aop-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-beans\7.0.5\spring-beans-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-core\7.0.5\spring-core-7.0.5.jar;C:\Users\serba\.m2\repository\commons-logging\commons-logging\1.3.5\commons-logging-1.3.5.jar;C:\Users\serba\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-resource-server\4.0.3\spring-boot-starter-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-resource-server\4.0.3\spring-boot-security-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.3\spring-security-oauth2-jose-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.3\spring-security-oauth2-core-7.0.3.jar;C:\Users\serba\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-resource-server\7.0.3\spring-security-oauth2-resource-server-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.3\spring-boot-starter-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.3\spring-boot-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.20.2\jackson-databind-2.20.2.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.20\jackson-annotations-2.20.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.20.2\jackson-core-2.20.2.jar;C:\Users\serba\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\serba\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\serba\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.3\spring-boot-starter-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.3\spring-boot-starter-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test\4.0.3\spring-boot-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.3\spring-boot-test-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\serba\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\serba\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\serba\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\serba\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\serba\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\serba\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\serba\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\serba\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\serba\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\serba\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\serba\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\serba\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\serba\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-test\7.0.5\spring-test-7.0.5.jar;C:\Users\serba\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.3\spring-boot-starter-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.3\spring-boot-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.3\spring-boot-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.3\spring-boot-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.3\spring-boot-starter-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.3\spring-boot-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-test\7.0.3\spring-security-test-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.3\spring-boot-starter-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.3\spring-boot-starter-jackson-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.3\spring-boot-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.3\spring-boot-web-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.3\spring-boot-resttestclient-4.0.3.jar;"/>
++    <property name="java.vm.vendor" value="JetBrains s.r.o."/>
++    <property name="sun.arch.data.model" value="64"/>
++    <property name="user.variant" value=""/>
++    <property name="java.vendor.url" value="https://openjdk.org/"/>
++    <property name="user.timezone" value="Europe/Bucharest"/>
++    <property name="org.jboss.logging.provider" value="slf4j"/>
++    <property name="os.name" value="Windows 10"/>
++    <property name="java.vm.specification.version" value="21"/>
++    <property name="sun.java.launcher" value="SUN_STANDARD"/>
++    <property name="user.country" value="US"/>
++    <property name="sun.boot.library.path" value="C:\Program Files\Android\Android Studio\jbr\bin"/>
++    <property name="sun.java.command" value="C:\Users\serba\AppData\Local\Temp\surefire3193715945928273036\surefirebooter-20260401002848645_3.jar C:\Users\serba\AppData\Local\Temp\surefire3193715945928273036 2026-04-01T00-28-48_536-jvmRun1 surefire-20260401002848645_1tmp surefire_0-20260401002848645_2tmp"/>
++    <property name="jdk.debug" value="release"/>
++    <property name="surefire.test.class.path" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\test-classes;C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\classes;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.3\spring-boot-starter-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.3\spring-boot-starter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.3\spring-boot-starter-logging-4.0.3.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\serba\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.3\spring-boot-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\serba\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.3\spring-boot-starter-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.3\spring-boot-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-databind\3.0.4\jackson-databind-3.0.4.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-core\3.0.4\jackson-core-3.0.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.3\spring-boot-starter-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.3\spring-boot-starter-tomcat-runtime-4.0.3.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.18\tomcat-embed-core-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.18\tomcat-embed-el-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.18\tomcat-embed-websocket-11.0.18.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.3\spring-boot-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.3\spring-boot-http-converter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot\4.0.3\spring-boot-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-context\7.0.5\spring-context-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-web\7.0.5\spring-web-7.0.5.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-observation\1.16.3\micrometer-observation-1.16.3.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-commons\1.16.3\micrometer-commons-1.16.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.3\spring-boot-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.3\spring-boot-servlet-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-webmvc\7.0.5\spring-webmvc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-expression\7.0.5\spring-expression-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.3\spring-boot-starter-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.3\spring-boot-starter-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\serba\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.3\spring-boot-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.3\spring-boot-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.3\spring-boot-persistence-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-commons\4.0.3\spring-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.3\spring-boot-hibernate-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.3\spring-boot-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\serba\.m2\repository\org\hibernate\orm\hibernate-core\7.2.4.Final\hibernate-core-7.2.4.Final.jar;C:\Users\serba\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\jboss\logging\jboss-logging\3.6.2.Final\jboss-logging-3.6.2.Final.jar;C:\Users\serba\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\serba\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\serba\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\serba\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-orm\7.0.5\spring-orm-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-jpa\4.0.3\spring-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-tx\7.0.5\spring-tx-7.0.5.jar;C:\Users\serba\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aspects\7.0.5\spring-aspects-7.0.5.jar;C:\Users\serba\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.3\spring-boot-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.3\spring-boot-sql-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.3\spring-boot-transaction-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-jdbc\7.0.5\spring-jdbc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.3\spring-boot-starter-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security\4.0.3\spring-boot-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-config\7.0.3\spring-security-config-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-core\7.0.3\spring-security-core-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-crypto\7.0.3\spring-security-crypto-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-web\7.0.3\spring-security-web-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aop\7.0.5\spring-aop-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-beans\7.0.5\spring-beans-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-core\7.0.5\spring-core-7.0.5.jar;C:\Users\serba\.m2\repository\commons-logging\commons-logging\1.3.5\commons-logging-1.3.5.jar;C:\Users\serba\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-resource-server\4.0.3\spring-boot-starter-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-resource-server\4.0.3\spring-boot-security-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.3\spring-security-oauth2-jose-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.3\spring-security-oauth2-core-7.0.3.jar;C:\Users\serba\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-resource-server\7.0.3\spring-security-oauth2-resource-server-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.3\spring-boot-starter-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.3\spring-boot-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.20.2\jackson-databind-2.20.2.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.20\jackson-annotations-2.20.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.20.2\jackson-core-2.20.2.jar;C:\Users\serba\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\serba\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\serba\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.3\spring-boot-starter-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.3\spring-boot-starter-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test\4.0.3\spring-boot-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.3\spring-boot-test-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\serba\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\serba\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\serba\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\serba\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\serba\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\serba\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\serba\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\serba\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\serba\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\serba\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\serba\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\serba\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\serba\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-test\7.0.5\spring-test-7.0.5.jar;C:\Users\serba\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.3\spring-boot-starter-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.3\spring-boot-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.3\spring-boot-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.3\spring-boot-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.3\spring-boot-starter-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.3\spring-boot-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-test\7.0.3\spring-security-test-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.3\spring-boot-starter-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.3\spring-boot-starter-jackson-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.3\spring-boot-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.3\spring-boot-web-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.3\spring-boot-resttestclient-4.0.3.jar;"/>
++    <property name="sun.cpu.endian" value="little"/>
++    <property name="user.home" value="C:\Users\serba"/>
++    <property name="user.language" value="en"/>
++    <property name="java.specification.vendor" value="Oracle Corporation"/>
++    <property name="java.version.date" value="2025-04-15"/>
++    <property name="java.home" value="C:\Program Files\Android\Android Studio\jbr"/>
++    <property name="file.separator" value="\"/>
++    <property name="basedir" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest"/>
++    <property name="java.vm.compressedOopsMode" value="Zero based"/>
++    <property name="line.separator" value="&#10;"/>
++    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
++    <property name="java.specification.name" value="Java Platform API Specification"/>
++    <property name="intellij.os.virtualization" value="none"/>
++    <property name="FILE_LOG_CHARSET" value="UTF-8"/>
++    <property name="java.awt.headless" value="true"/>
++    <property name="jbr.virtualization.information" value="Hyper-V role"/>
++    <property name="surefire.real.class.path" value="C:\Users\serba\AppData\Local\Temp\surefire3193715945928273036\surefirebooter-20260401002848645_3.jar"/>
++    <property name="user.script" value=""/>
++    <property name="polyglot.engine.WarnInterpreterOnly" value="false"/>
++    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
++    <property name="java.runtime.version" value="21.0.7+-13880790-b1038.58"/>
++    <property name="user.name" value="serba"/>
++    <property name="stdout.encoding" value="Cp1252"/>
++    <property name="path.separator" value=";"/>
++    <property name="os.version" value="10.0"/>
++    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
++    <property name="file.encoding" value="UTF-8"/>
++    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
++    <property name="localRepository" value="C:\Users\serba\.m2\repository"/>
++    <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
++    <property name="java.io.tmpdir" value="C:\Users\serba\AppData\Local\Temp\"/>
++    <property name="com.zaxxer.hikari.pool_number" value="2"/>
++    <property name="java.version" value="21.0.7"/>
++    <property name="user.dir" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest"/>
++    <property name="os.arch" value="amd64"/>
++    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
++    <property name="PID" value="5128"/>
++    <property name="sun.os.patch.level" value=""/>
++    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
++    <property name="native.encoding" value="Cp1252"/>
++    <property name="java.library.path" value="C:\Program Files\Android\Android Studio\jbr\bin;C:\Windows\Sun\Java\bin;C:\Windows\system32;C:\Windows;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Program Files\Microsoft\jdk-11.0.12.7-hotspot\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\mingw64\bin;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Users\serba\AppData\Roaming\nvm;C:\Program Files\nodejs;A:\nodeJS;A:\Putty\;A:\Putty Bitwise SSH Client;C:\Program Files\dotnet\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\serba\OneDrive\Desktop\Master\Info_economica_master_sem1\Cloud_Computing_Critoma\java17\jdk-17.0.10\bin;C:\Program Files (x86)\Gpg4win\..\GnuPG\bin;A:\Git\cmd;C:\Users\serba\OneDrive\Desktop\Master\Info_economica_master_sem1\Cloud_Computing_Critoma\java17\jdk-17.0.10\bin;C:\Users\serba\AppData\Local\Programs\Python\Python311\Scripts\;C:\Users\serba\AppData\Local\Programs\Python\Python311\;C:\Program Files\MySQL\MySQL Shell 8.0\bin\;C:\Users\serba\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\serba\AppData\Local\Programs\Python\Python310\;C:\Users\serba\AppData\Local\Microsoft\WindowsApps;C:\OJI\FP\bin\i386-Win32;C:\MinGW\bin;C:\Users\serba\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2022.1\bin;;C:\src\flutter\bin;A:\SDK\platform-tools;A:\SDK\platforms;A:\WebStorm\WebStorm 2022.1\bin;;C:\Users\serba\OneDrive\Desktop\SmarTea\stripe_1.21.0_windows_x86_64;;A:\PyCharm 2022.3.1\bin;;C:\Users\serba\AppData\Roaming\npm;C:\Users\serba\AppData\Roaming\nvm;C:\Program Files\nodejs;A:\nodeJS;C:\Users\serba\AppData\Local\Programs\Hyper\resources\bin;C:\Program Files (x86)\MongoDB Atlas CLI\;C:\Users\serba\.dotnet\tools;C:\Rider\bin;A:\Cursor\cursor\resources\app\bin;."/>
++    <property name="java.vm.info" value="mixed mode"/>
++    <property name="stderr.encoding" value="Cp1252"/>
++    <property name="java.vendor" value="JetBrains s.r.o."/>
++    <property name="java.vm.version" value="21.0.7+-13880790-b1038.58"/>
++    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
++    <property name="java.class.version" value="65.0"/>
++  </properties>
++  <testcase name="contextLoads" classname="com.app.neverest.NeverestApplicationTests" time="0.004">
++    <system-out><![CDATA[2026-04-01T00:28:58.099+03:00  INFO 5128 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.app.neverest.NeverestApplicationTests]: NeverestApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-01T00:28:58.108+03:00  INFO 5128 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.app.neverest.NeverestApplication for test class com.app.neverest.NeverestApplicationTests
++
++  .   ____          _            __ _ _
++ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
++( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
++ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
++  '  |____| .__|_| |_|_| |_\__, | / / / /
++ =========|_|==============|___/=/_/_/_/
++
++ :: Spring Boot ::                (v4.0.3)
++
++2026-04-01T00:28:58.147+03:00  INFO 5128 --- [           main] c.app.neverest.NeverestApplicationTests  : Starting NeverestApplicationTests using Java 21.0.7 with PID 5128 (started by serba in C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest)
++2026-04-01T00:28:58.148+03:00  INFO 5128 --- [           main] c.app.neverest.NeverestApplicationTests  : No active profile set, falling back to 1 default profile: "default"
++2026-04-01T00:28:58.325+03:00  INFO 5128 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
++2026-04-01T00:28:58.344+03:00  INFO 5128 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 16 ms. Found 9 JPA repository interfaces.
++2026-04-01T00:28:58.465+03:00  INFO 5128 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
++2026-04-01T00:28:58.466+03:00  INFO 5128 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:neverest-test user=SA
++2026-04-01T00:28:58.467+03:00  INFO 5128 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
++2026-04-01T00:28:58.468+03:00  INFO 5128 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:neverest-test (H2 2.4)
++2026-04-01T00:28:58.470+03:00  WARN 5128 --- [           main] o.f.c.internal.database.base.Database    : Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
++2026-04-01T00:28:58.479+03:00  INFO 5128 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.004s)
++2026-04-01T00:28:58.482+03:00  INFO 5128 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": 1
++2026-04-01T00:28:58.482+03:00  INFO 5128 --- [           main] o.f.core.internal.command.DbMigrate      : Schema "PUBLIC" is up to date. No migration necessary.
++2026-04-01T00:28:58.498+03:00  INFO 5128 --- [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
++2026-04-01T00:28:58.526+03:00  INFO 5128 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
++2026-04-01T00:28:58.529+03:00  INFO 5128 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
++	Database JDBC URL [jdbc:h2:mem:neverest-test]
++	Database driver: H2 JDBC Driver
++	Database dialect: H2Dialect
++	Database version: 2.4.240
++	Default catalog/schema: NEVEREST-TEST/PUBLIC
++	Autocommit mode: undefined/unknown
++	Isolation level: READ_COMMITTED [default READ_COMMITTED]
++	JDBC fetch size: 100
++	Pool: DataSourceConnectionProvider
++	Minimum pool size: undefined/unknown
++	Maximum pool size: undefined/unknown
++2026-04-01T00:28:58.612+03:00  INFO 5128 --- [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
++2026-04-01T00:28:58.616+03:00  INFO 5128 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
++2026-04-01T00:28:58.983+03:00  INFO 5128 --- [           main] c.app.neverest.NeverestApplicationTests  : Started NeverestApplicationTests in 0.866 seconds (process running for 10.192)
++]]></system-out>
++  </testcase>
++</testsuite>
+\ No newline at end of file
+Index: target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst b/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+new file mode 100644
+--- /dev/null	(date 1774991757279)
++++ b/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst	(date 1774991757279)
+@@ -0,0 +1,74 @@
++com\app\neverest\domain\ChallengeMode.class
++com\app\neverest\domain\ChallengeSubmission.class
++com\app\neverest\api\dto\ReviewChallengeSubmissionRequest.class
++com\app\neverest\api\dto\CreateEventRequest.class
++com\app\neverest\audit\AuditLogService.class
++com\app\neverest\domain\RewardRedemption.class
++com\app\neverest\api\dto\CreateUserRequest.class
++com\app\neverest\persistence\entity\RewardEntity.class
++com\app\neverest\common\AuthUtils.class
++com\app\neverest\integration\AnnouncementDispatchResult.class
++com\app\neverest\integration\AnnouncementChannel.class
++com\app\neverest\api\UserController.class
++com\app\neverest\persistence\entity\ChallengeSubmissionEntity.class
++com\app\neverest\api\LeaderboardController.class
++com\app\neverest\persistence\entity\EventEntity.class
++com\app\neverest\persistence\entity\AuditLogEntity.class
++com\app\neverest\service\NeverestCoreService.class
++com\app\neverest\config\SecurityConfiguration$FirebaseAudienceValidator.class
++com\app\neverest\domain\Event.class
++com\app\neverest\persistence\repository\EventCheckInRepository.class
++com\app\neverest\common\ApiExceptionHandler.class
++com\app\neverest\common\BadRequestException.class
++com\app\neverest\service\NeverestCoreService$CheckInResult.class
++com\app\neverest\api\dto\RewardResponse.class
++com\app\neverest\persistence\repository\AnnouncementTaskRepository.class
++com\app\neverest\api\dto\AuditLogResponse.class
++com\app\neverest\domain\Reward.class
++com\app\neverest\persistence\repository\UserRepository.class
++com\app\neverest\common\ConflictException.class
++com\app\neverest\service\NeverestCoreService$LeaderboardEntry.class
++com\app\neverest\domain\ChallengeSubmissionStatus.class
++com\app\neverest\api\dto\CreateRewardRequest.class
++com\app\neverest\api\dto\SubmitChallengeRequest.class
++com\app\neverest\persistence\repository\EventRepository.class
++com\app\neverest\persistence\entity\UserEntity.class
++com\app\neverest\persistence\repository\RewardRepository.class
++com\app\neverest\domain\ActivityType.class
++com\app\neverest\api\dto\AnnouncementDispatchResponse.class
++com\app\neverest\api\dto\CheckInResponse.class
++com\app\neverest\config\SecurityConfiguration.class
++com\app\neverest\persistence\entity\ChallengeEntity.class
++com\app\neverest\api\dto\ChallengeSubmissionResponse.class
++com\app\neverest\persistence\entity\RewardRedemptionEntity.class
++com\app\neverest\persistence\repository\RewardRedemptionRepository.class
++com\app\neverest\persistence\repository\AuditLogRepository.class
++com\app\neverest\persistence\repository\ChallengeRepository.class
++com\app\neverest\api\dto\UserResponse.class
++com\app\neverest\api\dto\RedeemRewardRequest.class
++com\app\neverest\api\EventController.class
++com\app\neverest\common\ApiErrorResponse.class
++com\app\neverest\persistence\entity\EventCheckInEntity.class
++com\app\neverest\integration\AnnouncementTaskService.class
++com\app\neverest\integration\AnnouncementTaskStatus.class
++com\app\neverest\api\dto\EventCreatedResponse.class
++com\app\neverest\api\AuthController.class
++com\app\neverest\persistence\repository\ChallengeSubmissionRepository.class
++com\app\neverest\api\dto\LeaderboardEntryResponse.class
++com\app\neverest\audit\AuditLogEntry.class
++com\app\neverest\integration\EventAnnouncementService.class
++com\app\neverest\persistence\entity\AnnouncementTaskEntity.class
++com\app\neverest\common\NotFoundException.class
++com\app\neverest\api\dto\EventResponse.class
++com\app\neverest\domain\ChallengeFrequency.class
++com\app\neverest\api\dto\CreateChallengeRequest.class
++com\app\neverest\api\dto\CheckInRequest.class
++com\app\neverest\api\RewardController.class
++com\app\neverest\api\ChallengeController.class
++com\app\neverest\domain\Challenge.class
++com\app\neverest\api\dto\ChallengeResponse.class
++com\app\neverest\api\AdminController.class
++com\app\neverest\domain\UserProfile.class
++com\app\neverest\api\dto\MeResponse.class
++com\app\neverest\api\dto\RewardRedemptionResponse.class
++com\app\neverest\NeverestApplication.class
+Index: target/surefire-reports/TEST-com.app.neverest.service.NeverestCoreServiceTests.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/surefire-reports/TEST-com.app.neverest.service.NeverestCoreServiceTests.xml b/target/surefire-reports/TEST-com.app.neverest.service.NeverestCoreServiceTests.xml
+new file mode 100644
+--- /dev/null	(date 1774992539205)
++++ b/target/surefire-reports/TEST-com.app.neverest.service.NeverestCoreServiceTests.xml	(date 1774992539205)
+@@ -0,0 +1,78 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.app.neverest.service.NeverestCoreServiceTests" time="0.194" tests="4" errors="0" skipped="0" failures="0">
++  <properties>
++    <property name="java.specification.version" value="21"/>
++    <property name="sun.cpu.isalist" value="amd64"/>
++    <property name="sun.jnu.encoding" value="Cp1252"/>
++    <property name="java.class.path" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\test-classes;C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\classes;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.3\spring-boot-starter-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.3\spring-boot-starter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.3\spring-boot-starter-logging-4.0.3.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\serba\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.3\spring-boot-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\serba\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.3\spring-boot-starter-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.3\spring-boot-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-databind\3.0.4\jackson-databind-3.0.4.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-core\3.0.4\jackson-core-3.0.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.3\spring-boot-starter-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.3\spring-boot-starter-tomcat-runtime-4.0.3.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.18\tomcat-embed-core-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.18\tomcat-embed-el-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.18\tomcat-embed-websocket-11.0.18.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.3\spring-boot-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.3\spring-boot-http-converter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot\4.0.3\spring-boot-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-context\7.0.5\spring-context-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-web\7.0.5\spring-web-7.0.5.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-observation\1.16.3\micrometer-observation-1.16.3.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-commons\1.16.3\micrometer-commons-1.16.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.3\spring-boot-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.3\spring-boot-servlet-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-webmvc\7.0.5\spring-webmvc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-expression\7.0.5\spring-expression-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.3\spring-boot-starter-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.3\spring-boot-starter-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\serba\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.3\spring-boot-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.3\spring-boot-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.3\spring-boot-persistence-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-commons\4.0.3\spring-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.3\spring-boot-hibernate-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.3\spring-boot-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\serba\.m2\repository\org\hibernate\orm\hibernate-core\7.2.4.Final\hibernate-core-7.2.4.Final.jar;C:\Users\serba\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\jboss\logging\jboss-logging\3.6.2.Final\jboss-logging-3.6.2.Final.jar;C:\Users\serba\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\serba\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\serba\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\serba\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-orm\7.0.5\spring-orm-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-jpa\4.0.3\spring-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-tx\7.0.5\spring-tx-7.0.5.jar;C:\Users\serba\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aspects\7.0.5\spring-aspects-7.0.5.jar;C:\Users\serba\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.3\spring-boot-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.3\spring-boot-sql-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.3\spring-boot-transaction-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-jdbc\7.0.5\spring-jdbc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.3\spring-boot-starter-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security\4.0.3\spring-boot-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-config\7.0.3\spring-security-config-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-core\7.0.3\spring-security-core-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-crypto\7.0.3\spring-security-crypto-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-web\7.0.3\spring-security-web-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aop\7.0.5\spring-aop-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-beans\7.0.5\spring-beans-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-core\7.0.5\spring-core-7.0.5.jar;C:\Users\serba\.m2\repository\commons-logging\commons-logging\1.3.5\commons-logging-1.3.5.jar;C:\Users\serba\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-resource-server\4.0.3\spring-boot-starter-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-resource-server\4.0.3\spring-boot-security-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.3\spring-security-oauth2-jose-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.3\spring-security-oauth2-core-7.0.3.jar;C:\Users\serba\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-resource-server\7.0.3\spring-security-oauth2-resource-server-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.3\spring-boot-starter-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.3\spring-boot-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.20.2\jackson-databind-2.20.2.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.20\jackson-annotations-2.20.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.20.2\jackson-core-2.20.2.jar;C:\Users\serba\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\serba\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\serba\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.3\spring-boot-starter-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.3\spring-boot-starter-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test\4.0.3\spring-boot-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.3\spring-boot-test-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\serba\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\serba\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\serba\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\serba\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\serba\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\serba\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\serba\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\serba\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\serba\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\serba\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\serba\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\serba\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\serba\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-test\7.0.5\spring-test-7.0.5.jar;C:\Users\serba\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.3\spring-boot-starter-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.3\spring-boot-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.3\spring-boot-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.3\spring-boot-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.3\spring-boot-starter-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.3\spring-boot-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-test\7.0.3\spring-security-test-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.3\spring-boot-starter-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.3\spring-boot-starter-jackson-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.3\spring-boot-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.3\spring-boot-web-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.3\spring-boot-resttestclient-4.0.3.jar;"/>
++    <property name="java.vm.vendor" value="JetBrains s.r.o."/>
++    <property name="sun.arch.data.model" value="64"/>
++    <property name="user.variant" value=""/>
++    <property name="java.vendor.url" value="https://openjdk.org/"/>
++    <property name="user.timezone" value="Europe/Bucharest"/>
++    <property name="org.jboss.logging.provider" value="slf4j"/>
++    <property name="os.name" value="Windows 10"/>
++    <property name="java.vm.specification.version" value="21"/>
++    <property name="sun.java.launcher" value="SUN_STANDARD"/>
++    <property name="user.country" value="US"/>
++    <property name="sun.boot.library.path" value="C:\Program Files\Android\Android Studio\jbr\bin"/>
++    <property name="sun.java.command" value="C:\Users\serba\AppData\Local\Temp\surefire3193715945928273036\surefirebooter-20260401002848645_3.jar C:\Users\serba\AppData\Local\Temp\surefire3193715945928273036 2026-04-01T00-28-48_536-jvmRun1 surefire-20260401002848645_1tmp surefire_0-20260401002848645_2tmp"/>
++    <property name="jdk.debug" value="release"/>
++    <property name="surefire.test.class.path" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\test-classes;C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\target\classes;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc\4.0.3\spring-boot-starter-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter\4.0.3\spring-boot-starter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-logging\4.0.3\spring-boot-starter-logging-4.0.3.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-classic\1.5.32\logback-classic-1.5.32.jar;C:\Users\serba\.m2\repository\ch\qos\logback\logback-core\1.5.32\logback-core-1.5.32.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-to-slf4j\2.25.3\log4j-to-slf4j-2.25.3.jar;C:\Users\serba\.m2\repository\org\apache\logging\log4j\log4j-api\2.25.3\log4j-api-2.25.3.jar;C:\Users\serba\.m2\repository\org\slf4j\jul-to-slf4j\2.0.17\jul-to-slf4j-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\4.0.3\spring-boot-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\annotation\jakarta.annotation-api\3.0.0\jakarta.annotation-api-3.0.0.jar;C:\Users\serba\.m2\repository\org\yaml\snakeyaml\2.5\snakeyaml-2.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson\4.0.3\spring-boot-starter-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jackson\4.0.3\spring-boot-jackson-4.0.3.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-databind\3.0.4\jackson-databind-3.0.4.jar;C:\Users\serba\.m2\repository\tools\jackson\core\jackson-core\3.0.4\jackson-core-3.0.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\4.0.3\spring-boot-starter-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat-runtime\4.0.3\spring-boot-starter-tomcat-runtime-4.0.3.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.18\tomcat-embed-core-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\11.0.18\tomcat-embed-el-11.0.18.jar;C:\Users\serba\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\11.0.18\tomcat-embed-websocket-11.0.18.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-tomcat\4.0.3\spring-boot-tomcat-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-http-converter\4.0.3\spring-boot-http-converter-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot\4.0.3\spring-boot-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-context\7.0.5\spring-context-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-web\7.0.5\spring-web-7.0.5.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-observation\1.16.3\micrometer-observation-1.16.3.jar;C:\Users\serba\.m2\repository\io\micrometer\micrometer-commons\1.16.3\micrometer-commons-1.16.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc\4.0.3\spring-boot-webmvc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-servlet\4.0.3\spring-boot-servlet-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-webmvc\7.0.5\spring-webmvc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-expression\7.0.5\spring-expression-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\4.0.3\spring-boot-starter-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\4.0.3\spring-boot-starter-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\com\zaxxer\HikariCP\7.0.2\HikariCP-7.0.2.jar;C:\Users\serba\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa\4.0.3\spring-boot-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-commons\4.0.3\spring-boot-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-persistence\4.0.3\spring-boot-persistence-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-commons\4.0.3\spring-data-commons-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-hibernate\4.0.3\spring-boot-hibernate-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa\4.0.3\spring-boot-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.2.0\jakarta.persistence-api-3.2.0.jar;C:\Users\serba\.m2\repository\org\hibernate\orm\hibernate-core\7.2.4.Final\hibernate-core-7.2.4.Final.jar;C:\Users\serba\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\jboss\logging\jboss-logging\3.6.2.Final\jboss-logging-3.6.2.Final.jar;C:\Users\serba\.m2\repository\org\hibernate\models\hibernate-models\1.0.1\hibernate-models-1.0.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\classmate\1.7.3\classmate-1.7.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.6\jaxb-runtime-4.0.6.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.6\jaxb-core-4.0.6.jar;C:\Users\serba\.m2\repository\org\eclipse\angus\angus-activation\2.0.3\angus-activation-2.0.3.jar;C:\Users\serba\.m2\repository\org\glassfish\jaxb\txw2\4.0.6\txw2-4.0.6.jar;C:\Users\serba\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\serba\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-orm\7.0.5\spring-orm-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\data\spring-data-jpa\4.0.3\spring-data-jpa-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-tx\7.0.5\spring-tx-7.0.5.jar;C:\Users\serba\.m2\repository\org\antlr\antlr4-runtime\4.13.2\antlr4-runtime-4.13.2.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aspects\7.0.5\spring-aspects-7.0.5.jar;C:\Users\serba\.m2\repository\org\aspectj\aspectjweaver\1.9.25.1\aspectjweaver-1.9.25.1.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc\4.0.3\spring-boot-jdbc-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-sql\4.0.3\spring-boot-sql-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-transaction\4.0.3\spring-boot-transaction-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-jdbc\7.0.5\spring-jdbc-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security\4.0.3\spring-boot-starter-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security\4.0.3\spring-boot-security-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-config\7.0.3\spring-security-config-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-core\7.0.3\spring-security-core-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-crypto\7.0.3\spring-security-crypto-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-web\7.0.3\spring-security-web-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\spring-aop\7.0.5\spring-aop-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-beans\7.0.5\spring-beans-7.0.5.jar;C:\Users\serba\.m2\repository\org\springframework\spring-core\7.0.5\spring-core-7.0.5.jar;C:\Users\serba\.m2\repository\commons-logging\commons-logging\1.3.5\commons-logging-1.3.5.jar;C:\Users\serba\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-oauth2-resource-server\4.0.3\spring-boot-starter-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-oauth2-resource-server\4.0.3\spring-boot-security-oauth2-resource-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-jose\7.0.3\spring-security-oauth2-jose-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-core\7.0.3\spring-security-oauth2-core-7.0.3.jar;C:\Users\serba\.m2\repository\com\nimbusds\nimbus-jose-jwt\10.4\nimbus-jose-jwt-10.4.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-oauth2-resource-server\7.0.3\spring-security-oauth2-resource-server-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-flyway\4.0.3\spring-boot-starter-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-flyway\4.0.3\spring-boot-flyway-4.0.3.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-database-postgresql\11.14.1\flyway-database-postgresql-11.14.1.jar;C:\Users\serba\.m2\repository\org\flywaydb\flyway-core\11.14.1\flyway-core-11.14.1.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.20.2\jackson-databind-2.20.2.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.20\jackson-annotations-2.20.jar;C:\Users\serba\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.20.2\jackson-core-2.20.2.jar;C:\Users\serba\.m2\repository\org\postgresql\postgresql\42.7.10\postgresql-42.7.10.jar;C:\Users\serba\.m2\repository\org\checkerframework\checker-qual\3.52.0\checker-qual-3.52.0.jar;C:\Users\serba\.m2\repository\com\h2database\h2\2.4.240\h2-2.4.240.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa-test\4.0.3\spring-boot-starter-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-test\4.0.3\spring-boot-starter-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test\4.0.3\spring-boot-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\4.0.3\spring-boot-test-autoconfigure-4.0.3.jar;C:\Users\serba\.m2\repository\com\jayway\jsonpath\json-path\2.10.0\json-path-2.10.0.jar;C:\Users\serba\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.4\jakarta.xml.bind-api-4.0.4.jar;C:\Users\serba\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.4\jakarta.activation-api-2.1.4.jar;C:\Users\serba\.m2\repository\net\minidev\json-smart\2.6.0\json-smart-2.6.0.jar;C:\Users\serba\.m2\repository\net\minidev\accessors-smart\2.6.0\accessors-smart-2.6.0.jar;C:\Users\serba\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\serba\.m2\repository\org\assertj\assertj-core\3.27.7\assertj-core-3.27.7.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy\1.17.8\byte-buddy-1.17.8.jar;C:\Users\serba\.m2\repository\org\awaitility\awaitility\4.3.0\awaitility-4.3.0.jar;C:\Users\serba\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter\6.0.3\junit-jupiter-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-api\6.0.3\junit-jupiter-api-6.0.3.jar;C:\Users\serba\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-commons\6.0.3\junit-platform-commons-6.0.3.jar;C:\Users\serba\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-params\6.0.3\junit-jupiter-params-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\jupiter\junit-jupiter-engine\6.0.3\junit-jupiter-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\junit\platform\junit-platform-engine\6.0.3\junit-platform-engine-6.0.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-core\5.20.0\mockito-core-5.20.0.jar;C:\Users\serba\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar;C:\Users\serba\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\serba\.m2\repository\org\mockito\mockito-junit-jupiter\5.20.0\mockito-junit-jupiter-5.20.0.jar;C:\Users\serba\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\serba\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\serba\.m2\repository\org\springframework\spring-test\7.0.5\spring-test-7.0.5.jar;C:\Users\serba\.m2\repository\org\xmlunit\xmlunit-core\2.10.4\xmlunit-core-2.10.4.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc-test\4.0.3\spring-boot-starter-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jdbc-test\4.0.3\spring-boot-jdbc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-data-jpa-test\4.0.3\spring-boot-data-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-jpa-test\4.0.3\spring-boot-jpa-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-security-test\4.0.3\spring-boot-starter-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-security-test\4.0.3\spring-boot-security-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\security\spring-security-test\7.0.3\spring-security-test-7.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-webmvc-test\4.0.3\spring-boot-starter-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-starter-jackson-test\4.0.3\spring-boot-starter-jackson-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-webmvc-test\4.0.3\spring-boot-webmvc-test-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-web-server\4.0.3\spring-boot-web-server-4.0.3.jar;C:\Users\serba\.m2\repository\org\springframework\boot\spring-boot-resttestclient\4.0.3\spring-boot-resttestclient-4.0.3.jar;"/>
++    <property name="sun.cpu.endian" value="little"/>
++    <property name="user.home" value="C:\Users\serba"/>
++    <property name="user.language" value="en"/>
++    <property name="java.specification.vendor" value="Oracle Corporation"/>
++    <property name="java.version.date" value="2025-04-15"/>
++    <property name="java.home" value="C:\Program Files\Android\Android Studio\jbr"/>
++    <property name="file.separator" value="\"/>
++    <property name="basedir" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest"/>
++    <property name="java.vm.compressedOopsMode" value="Zero based"/>
++    <property name="line.separator" value="&#10;"/>
++    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
++    <property name="java.specification.name" value="Java Platform API Specification"/>
++    <property name="intellij.os.virtualization" value="none"/>
++    <property name="FILE_LOG_CHARSET" value="UTF-8"/>
++    <property name="java.awt.headless" value="true"/>
++    <property name="jbr.virtualization.information" value="Hyper-V role"/>
++    <property name="surefire.real.class.path" value="C:\Users\serba\AppData\Local\Temp\surefire3193715945928273036\surefirebooter-20260401002848645_3.jar"/>
++    <property name="user.script" value=""/>
++    <property name="polyglot.engine.WarnInterpreterOnly" value="false"/>
++    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
++    <property name="java.runtime.version" value="21.0.7+-13880790-b1038.58"/>
++    <property name="user.name" value="serba"/>
++    <property name="stdout.encoding" value="Cp1252"/>
++    <property name="path.separator" value=";"/>
++    <property name="os.version" value="10.0"/>
++    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
++    <property name="file.encoding" value="UTF-8"/>
++    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
++    <property name="localRepository" value="C:\Users\serba\.m2\repository"/>
++    <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
++    <property name="java.io.tmpdir" value="C:\Users\serba\AppData\Local\Temp\"/>
++    <property name="com.zaxxer.hikari.pool_number" value="2"/>
++    <property name="java.version" value="21.0.7"/>
++    <property name="user.dir" value="C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest"/>
++    <property name="os.arch" value="amd64"/>
++    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
++    <property name="PID" value="5128"/>
++    <property name="sun.os.patch.level" value=""/>
++    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
++    <property name="native.encoding" value="Cp1252"/>
++    <property name="java.library.path" value="C:\Program Files\Android\Android Studio\jbr\bin;C:\Windows\Sun\Java\bin;C:\Windows\system32;C:\Windows;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Program Files\Microsoft\jdk-11.0.12.7-hotspot\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\mingw64\bin;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Users\serba\AppData\Roaming\nvm;C:\Program Files\nodejs;A:\nodeJS;A:\Putty\;A:\Putty Bitwise SSH Client;C:\Program Files\dotnet\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\serba\OneDrive\Desktop\Master\Info_economica_master_sem1\Cloud_Computing_Critoma\java17\jdk-17.0.10\bin;C:\Program Files (x86)\Gpg4win\..\GnuPG\bin;A:\Git\cmd;C:\Users\serba\OneDrive\Desktop\Master\Info_economica_master_sem1\Cloud_Computing_Critoma\java17\jdk-17.0.10\bin;C:\Users\serba\AppData\Local\Programs\Python\Python311\Scripts\;C:\Users\serba\AppData\Local\Programs\Python\Python311\;C:\Program Files\MySQL\MySQL Shell 8.0\bin\;C:\Users\serba\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\serba\AppData\Local\Programs\Python\Python310\;C:\Users\serba\AppData\Local\Microsoft\WindowsApps;C:\OJI\FP\bin\i386-Win32;C:\MinGW\bin;C:\Users\serba\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2022.1\bin;;C:\src\flutter\bin;A:\SDK\platform-tools;A:\SDK\platforms;A:\WebStorm\WebStorm 2022.1\bin;;C:\Users\serba\OneDrive\Desktop\SmarTea\stripe_1.21.0_windows_x86_64;;A:\PyCharm 2022.3.1\bin;;C:\Users\serba\AppData\Roaming\npm;C:\Users\serba\AppData\Roaming\nvm;C:\Program Files\nodejs;A:\nodeJS;C:\Users\serba\AppData\Local\Programs\Hyper\resources\bin;C:\Program Files (x86)\MongoDB Atlas CLI\;C:\Users\serba\.dotnet\tools;C:\Rider\bin;A:\Cursor\cursor\resources\app\bin;."/>
++    <property name="java.vm.info" value="mixed mode"/>
++    <property name="stderr.encoding" value="Cp1252"/>
++    <property name="java.vendor" value="JetBrains s.r.o."/>
++    <property name="java.vm.version" value="21.0.7+-13880790-b1038.58"/>
++    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
++    <property name="java.class.version" value="65.0"/>
++  </properties>
++  <testcase name="authSubjectIsLinkedToSingleUserAndUsedForActionResolution" classname="com.app.neverest.service.NeverestCoreServiceTests" time="0.055">
++    <system-out><![CDATA[2026-04-01T00:28:58.996+03:00  INFO 5128 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.app.neverest.service.NeverestCoreServiceTests]: NeverestCoreServiceTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
++2026-04-01T00:28:59.008+03:00  INFO 5128 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.app.neverest.NeverestApplication for test class com.app.neverest.service.NeverestCoreServiceTests
++]]></system-out>
++  </testcase>
++  <testcase name="redeemRewardConsumesAvailablePoints" classname="com.app.neverest.service.NeverestCoreServiceTests" time="0.074"/>
++  <testcase name="approvedOfflineSubmissionAwardsPoints" classname="com.app.neverest.service.NeverestCoreServiceTests" time="0.026"/>
++  <testcase name="onlineChallengeIsAutoApprovedAndAwardsPoints" classname="com.app.neverest.service.NeverestCoreServiceTests" time="0.011"/>
++</testsuite>
+\ No newline at end of file
+Index: ../.idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/../.idea/workspace.xml b/../.idea/workspace.xml
+new file mode 100644
+--- /dev/null	(date 1772136154662)
++++ b/../.idea/workspace.xml	(date 1772136154662)
+@@ -0,0 +1,52 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="ChangeListManager">
++    <list default="true" id="8cd09da9-fa3c-4f80-975c-08924a63e0b7" name="Changes" comment="" />
++    <option name="SHOW_DIALOG" value="false" />
++    <option name="HIGHLIGHT_CONFLICTS" value="true" />
++    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
++    <option name="LAST_RESOLUTION" value="IGNORE" />
++  </component>
++  <component name="Git.Settings">
++    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
++  </component>
++  <component name="ProjectId" id="3ADl3nX2UhDbRtQLXAqXk7RTd81" />
++  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
++  <component name="ProjectViewState">
++    <option name="hideEmptyMiddlePackages" value="true" />
++    <option name="showLibraryContents" value="true" />
++  </component>
++  <component name="PropertiesComponent"><![CDATA[{
++  "keyToString": {
++    "RunOnceActivity.OpenProjectViewOnStart": "true",
++    "RunOnceActivity.ShowReadmeOnStart": "true",
++    "last_opened_file_path": "C:/Users/serba/OneDrive/Desktop/Neverest/backend/neverest-backend/neverest"
++  }
++}]]></component>
++  <component name="RunManager">
++    <configuration default="true" type="JetRunConfigurationType">
++      <module name="neverest-backend" />
++      <method v="2">
++        <option name="Make" enabled="true" />
++      </method>
++    </configuration>
++    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
++      <module name="neverest-backend" />
++      <option name="filePath" />
++      <method v="2">
++        <option name="Make" enabled="true" />
++      </method>
++    </configuration>
++  </component>
++  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
++  <component name="TaskManager">
++    <task active="true" id="Default" summary="Default task">
++      <changelist id="8cd09da9-fa3c-4f80-975c-08924a63e0b7" name="Changes" comment="" />
++      <created>1772134827787</created>
++      <option name="number" value="Default" />
++      <option name="presentableId" value="Default" />
++      <updated>1772134827787</updated>
++    </task>
++    <servers />
++  </component>
++</project>
+\ No newline at end of file
+Index: target/surefire-reports/com.app.neverest.NeverestApplicationTests.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/surefire-reports/com.app.neverest.NeverestApplicationTests.txt b/target/surefire-reports/com.app.neverest.NeverestApplicationTests.txt
+new file mode 100644
+--- /dev/null	(date 1774992538997)
++++ b/target/surefire-reports/com.app.neverest.NeverestApplicationTests.txt	(date 1774992538997)
+@@ -0,0 +1,4 @@
++-------------------------------------------------------------------------------
++Test set: com.app.neverest.NeverestApplicationTests
++-------------------------------------------------------------------------------
++Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.892 s -- in com.app.neverest.NeverestApplicationTests
+Index: target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst b/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+new file mode 100644
+--- /dev/null	(date 1774992527012)
++++ b/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst	(date 1774992527012)
+@@ -0,0 +1,71 @@
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\AdminController.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\AuthController.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\ChallengeController.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\AnnouncementDispatchResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\AuditLogResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\ChallengeResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\ChallengeSubmissionResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CheckInRequest.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CheckInResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreateChallengeRequest.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreateEventRequest.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreateRewardRequest.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreateUserRequest.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\EventCreatedResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\EventResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\LeaderboardEntryResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\MeResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\RedeemRewardRequest.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\ReviewChallengeSubmissionRequest.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\RewardRedemptionResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\RewardResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\SubmitChallengeRequest.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\UserResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\EventController.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\LeaderboardController.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\RewardController.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\UserController.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\audit\AuditLogEntry.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\audit\AuditLogService.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\common\ApiErrorResponse.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\common\ApiExceptionHandler.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\common\AuthUtils.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\common\BadRequestException.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\common\ConflictException.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\common\NotFoundException.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\config\SecurityConfiguration.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\ActivityType.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\Challenge.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\ChallengeFrequency.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\ChallengeMode.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\ChallengeSubmission.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\ChallengeSubmissionStatus.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\Event.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\Reward.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\RewardRedemption.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\domain\UserProfile.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\integration\AnnouncementChannel.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\integration\AnnouncementDispatchResult.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\integration\AnnouncementTaskService.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\integration\AnnouncementTaskStatus.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\integration\EventAnnouncementService.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\NeverestApplication.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\AnnouncementTaskEntity.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\AuditLogEntity.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\ChallengeEntity.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\ChallengeSubmissionEntity.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\EventCheckInEntity.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\EventEntity.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\RewardEntity.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\RewardRedemptionEntity.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\UserEntity.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\AnnouncementTaskRepository.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\AuditLogRepository.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\ChallengeRepository.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\ChallengeSubmissionRepository.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\EventCheckInRepository.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\EventRepository.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\RewardRedemptionRepository.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\RewardRepository.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\UserRepository.java
++C:\Users\serba\OneDrive\Desktop\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\service\NeverestCoreService.java
+Index: .idea/encodings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/encodings.xml b/.idea/encodings.xml
+new file mode 100644
+--- /dev/null	(date 1772136382851)
++++ b/.idea/encodings.xml	(date 1772136382851)
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="Encoding">
++    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/compiler.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/compiler.xml b/.idea/compiler.xml
+new file mode 100644
+--- /dev/null	(date 1774989110058)
++++ b/.idea/compiler.xml	(date 1774989110058)
+@@ -0,0 +1,18 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="CompilerConfiguration">
++    <annotationProcessing>
++      <profile name="Maven default annotation processors profile" enabled="true">
++        <sourceOutputDir name="target/generated-sources/annotations" />
++        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
++        <outputRelativeToContentRoot value="true" />
++        <module name="neverest" />
++      </profile>
++    </annotationProcessing>
++  </component>
++  <component name="JavacSettings">
++    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
++      <module name="neverest" options="-parameters" />
++    </option>
++  </component>
++</project>
+\ No newline at end of file
