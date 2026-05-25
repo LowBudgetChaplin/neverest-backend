@@ -7,15 +7,18 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="neverest" />
+        <module name="neverest-backend" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="neverest" target="17" />
+      <module name="neverest-backend" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="neverest" options="-parameters" />
+      <module name="neverest-backend" options="-parameters" />
     </option>
   </component>
 </project>

@@ -1,15 +1,18 @@
 package com.app.neverest.config;
 
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -18,38 +21,23 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
-import org.springframework.security.oauth2.core.OAuth2Error;
-import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.core.convert.converter.Converter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
 
-    private static final String FIREBASE_JWK_SET_URI =
-            "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
-
     @Bean
-    @ConditionalOnProperty(name = "neverest.auth.provider", havingValue = "none", matchIfMissing = true)
-    public SecurityFilterChain openSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
-
-        return http.build();
-    }
-
-    @Bean
-    @ConditionalOnProperty(name = "neverest.auth.provider", havingValue = "firebase")
-    public SecurityFilterChain firebaseSecurityFilterChain(
+    public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter
     ) throws Exception {
@@ -58,6 +46,8 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET, "/hello").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").hasRole("ADMIN")
@@ -80,23 +70,26 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "neverest.auth.provider", havingValue = "firebase")
-    public JwtDecoder jwtDecoder(@Value("${neverest.firebase.project-id:}") String projectId) {
-        if (projectId == null || projectId.isBlank()) {
-            throw new IllegalStateException("Set neverest.firebase.project-id when neverest.auth.provider=firebase.");
-        }
-
-        String issuer = "https://securetoken.google.com/" + projectId;
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(FIREBASE_JWK_SET_URI).build();
-
-        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuer);
-        OAuth2TokenValidator<Jwt> withAudience = new FirebaseAudienceValidator(projectId);
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(withIssuer, withAudience));
-        return decoder;
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
-    @ConditionalOnProperty(name = "neverest.auth.provider", havingValue = "firebase")
+    public JwtDecoder jwtDecoder(@Value("${neverest.auth.jwt-secret}") String jwtSecret) {
+        SecretKey secretKey = toSecretKey(jwtSecret);
+        return NimbusJwtDecoder
+                .withSecretKey(secretKey)
+                .macAlgorithm(MacAlgorithm.HS256)
+                .build();
+    }
+
+    @Bean
+    public JwtEncoder jwtEncoder(@Value("${neverest.auth.jwt-secret}") String jwtSecret) {
+        SecretKey secretKey = toSecretKey(jwtSecret);
+        return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
+    }
+
+    @Bean
     public Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter() {
         return jwt -> {
             Set<String> roles = extractRoles(jwt);
@@ -114,7 +107,6 @@ public class SecurityConfiguration {
                 if (!normalizedRole.startsWith("ROLE_")) {
                     normalizedRole = "ROLE_" + normalizedRole;
                 }
-
                 authorities.add(new SimpleGrantedAuthority(normalizedRole));
             }
 
@@ -149,28 +141,14 @@ public class SecurityConfiguration {
         return roles;
     }
 
-    private static final class FirebaseAudienceValidator implements OAuth2TokenValidator<Jwt> {
-
-        private static final OAuth2Error ERROR = new OAuth2Error(
-                "invalid_token",
-                "Firebase token audience does not match configured project id.",
-                null
-        );
-
-        private final String projectId;
-
-        private FirebaseAudienceValidator(String projectId) {
-            this.projectId = projectId;
+    private SecretKey toSecretKey(String rawSecret) {
+        if (rawSecret == null || rawSecret.isBlank()) {
+            throw new IllegalStateException("Set neverest.auth.jwt-secret with at least 32 characters.");
         }
-
-        @Override
-        public OAuth2TokenValidatorResult validate(Jwt jwt) {
-            List<String> audience = jwt.getAudience();
-            if (audience != null && audience.contains(projectId)) {
-                return OAuth2TokenValidatorResult.success();
-            }
-
-            return OAuth2TokenValidatorResult.failure(ERROR);
+        byte[] keyBytes = rawSecret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException("neverest.auth.jwt-secret must have at least 32 characters.");
         }
+        return new SecretKeySpec(keyBytes, "HmacSHA256");
     }
 }

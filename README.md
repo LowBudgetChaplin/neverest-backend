@@ -24,40 +24,68 @@ Pe Windows:
 .\mvnw.cmd spring-boot:run
 ```
 
-## Database (Phase 4)
+## Database (MySQL 8)
 
-Aplicatia foloseste acum persistenta SQL prin `Spring Data JPA` + migratii `Flyway`.
+Aplicatia foloseste persistenta SQL prin `Spring Data JPA` + migratii `Flyway`,
+iar baza de date oficiala este **MySQL 8** (`neverest`).
 
-### Config rapid local (default)
+### Configurare implicita
 
-Implicit ruleaza pe H2 in-memory compatibil PostgreSQL (util pentru development rapid).
+In `application.properties`, default-urile sunt:
 
-### Config PostgreSQL
+```properties
+spring.datasource.url=jdbc:mysql://127.0.0.1:3306/neverest?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useUnicode=true
+spring.datasource.username=root
+spring.datasource.password=
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+spring.jpa.properties.hibernate.type.preferred_uuid_jdbc_type=CHAR
+```
 
-Pornire rapida local cu Docker:
+Toate valorile pot fi suprascrise prin variabile de mediu:
+
+```powershell
+$env:NEV_DB_URL="jdbc:mysql://127.0.0.1:3306/neverest?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+$env:NEV_DB_USER="neverest_app"
+$env:NEV_DB_PASSWORD="parola_ta"
+$env:NEV_DB_DRIVER="com.mysql.cj.jdbc.Driver"
+```
+
+### Pornire rapida local (MySQL prin Docker)
 
 ```powershell
 docker compose up -d
 ```
 
-Fisierul folosit este `docker-compose.yml` din radacina backend-ului.
+Containerul ridicat de `docker-compose.yml` expune MySQL pe `127.0.0.1:3306` cu:
+- `MYSQL_DATABASE=neverest`
+- `MYSQL_USER=neverest`, `MYSQL_PASSWORD=neverest`
+- `MYSQL_ROOT_PASSWORD=root`
 
-Seteaza variabilele de mediu:
+### Pornire cu MySQL local instalat (ex. MySQL Workbench)
 
-```powershell
-$env:NEV_DB_URL="jdbc:postgresql://localhost:5432/neverest"
-$env:NEV_DB_USER="postgres"
-$env:NEV_DB_PASSWORD="postgres"
-$env:NEV_DB_DRIVER="org.postgresql.Driver"
-```
+1. Conecteaza-te in Workbench si executa:
+   ```sql
+   CREATE DATABASE IF NOT EXISTS neverest
+       CHARACTER SET utf8mb4
+       COLLATE utf8mb4_unicode_ci;
+   ```
+2. Optional, creeaza un user dedicat:
+   ```sql
+   CREATE USER 'neverest_app'@'localhost' IDENTIFIED BY 'parola_ta';
+   GRANT ALL PRIVILEGES ON neverest.* TO 'neverest_app'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+3. Seteaza `NEV_DB_USER` / `NEV_DB_PASSWORD` si porneste backend-ul.
 
-Ruleaza backend-ul pe profil PostgreSQL:
+La startup, Flyway aplica automat migratia `V1__init_schema.sql` si creeaza
+toate tabelele `nev_*` necesare. Daca baza contine deja tabele care nu provin
+de la Flyway, este activat `spring.flyway.baseline-on-migrate=true`, deci
+migratia se va aplica peste schema existenta fara a sterge ceva manual.
 
-```powershell
-.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=postgres
-```
-
-La startup, Flyway aplica automat migratia `V1__init_schema.sql`.
+> Nota: profilul `postgres` (`application-postgres.properties`) si imaginea
+> Docker Postgres au fost inlocuite cu MySQL. Daca ai nevoie de Postgres,
+> reactiveaza profilul cu propriile setari.
 
 ## Retry job pentru announcements
 

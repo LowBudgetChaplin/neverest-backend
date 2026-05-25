@@ -1,21 +1,26 @@
 services:
-  postgres:
-    image: postgres:16
-    container_name: neverest-postgres
+  mysql:
+    image: mysql:8.4
+    container_name: neverest-mysql
     restart: unless-stopped
     environment:
-      POSTGRES_DB: neverest
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      MYSQL_DATABASE: neverest
+      MYSQL_USER: neverest
+      MYSQL_PASSWORD: neverest
+      MYSQL_ROOT_PASSWORD: root
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=caching_sha2_password
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - neverest-postgres-data:/var/lib/postgresql/data
+      - neverest-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d neverest"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
 volumes:
-  neverest-postgres-data:
+  neverest-mysql-data:

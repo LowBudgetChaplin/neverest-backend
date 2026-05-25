@@ -15,6 +15,9 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByAuthSubject(String authSubject);
 
+    @Query("select u from UserEntity u where lower(u.authSubject) = lower(:authSubject)")
+    Optional<UserEntity> findByAuthSubjectIgnoreCase(@Param("authSubject") String authSubject);
+
     boolean existsByAuthSubject(String authSubject);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -26,6 +26,12 @@ public class UserEntity {
     @Column(name = "auth_subject", length = 200, unique = true)
     private String authSubject;
 
+    @Column(name = "password_hash", length = 120)
+    private String passwordHash;
+
+    @Column(name = "role", nullable = false, length = 24)
+    private String role;
+
     @Column(name = "total_points", nullable = false)
     private int totalPoints;
 
@@ -48,10 +54,23 @@ public class UserEntity {
     }
 
     public UserEntity(UUID id, String displayName, String qrCode, String authSubject) {
+        this(id, displayName, qrCode, authSubject, null, "USER");
+    }
+
+    public UserEntity(
+            UUID id,
+            String displayName,
+            String qrCode,
+            String authSubject,
+            String passwordHash,
+            String role
+    ) {
         this.id = id;
         this.displayName = displayName;
         this.qrCode = qrCode;
         this.authSubject = authSubject;
+        this.passwordHash = passwordHash;
+        this.role = role == null || role.isBlank() ? "USER" : role.trim().toUpperCase();
         this.totalPoints = 0;
         this.availablePoints = 0;
         this.pointsPadel = 0;
@@ -80,6 +99,22 @@ public class UserEntity {
 
     public String getAuthSubject() {
         return authSubject;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public void setRole(String role) {
+        this.role = role == null || role.isBlank() ? "USER" : role.trim().toUpperCase();
     }
 
     public int getTotalPoints() {

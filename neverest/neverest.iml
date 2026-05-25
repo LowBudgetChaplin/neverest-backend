@@ -99,9 +99,11 @@
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.20.2" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.20" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-core:2.20.2" level="project" />
+    <orderEntry type="library" name="Maven: org.flywaydb:flyway-mysql:11.14.1" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: org.postgresql:postgresql:42.7.10" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: org.checkerframework:checker-qual:3.52.0" level="project" />
-    <orderEntry type="library" scope="RUNTIME" name="Maven: com.h2database:h2:2.4.240" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Maven: com.mysql:mysql-connector-j:9.6.0" level="project" />
+    <orderEntry type="library" scope="TEST" name="Maven: com.h2database:h2:2.4.240" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.springframework.boot:spring-boot-starter-data-jpa-test:4.0.3" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.springframework.boot:spring-boot-starter-test:4.0.3" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.springframework.boot:spring-boot-test:4.0.3" level="project" />

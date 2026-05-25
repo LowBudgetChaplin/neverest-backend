@@ -16,8 +16,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-        "neverest.auth.provider=firebase",
-        "neverest.firebase.project-id=test-project-id",
         "neverest.integrations.retry.enabled=false"
 })
 class SecurityAuthorizationTests {

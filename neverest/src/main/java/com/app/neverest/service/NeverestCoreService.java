@@ -469,7 +469,7 @@ public class NeverestCoreService {
     @Transactional(readOnly = true)
     public UserProfile getUserByAuthSubject(String authSubject) {
         String normalizedAuthSubject = normalizeRequired(authSubject, "authSubject");
-        UserEntity user = userRepository.findByAuthSubject(normalizedAuthSubject)
+        UserEntity user = userRepository.findByAuthSubjectIgnoreCase(normalizedAuthSubject)
                 .orElseThrow(() -> new NotFoundException("No user profile is linked to the authenticated account."));
         return toDomain(user);
     }
@@ -478,7 +478,7 @@ public class NeverestCoreService {
     public UUID resolveUserIdForAction(String authSubject, UUID fallbackUserId) {
         String normalizedAuthSubject = normalizeOptional(authSubject);
         if (normalizedAuthSubject != null) {
-            UserEntity user = userRepository.findByAuthSubject(normalizedAuthSubject)
+            UserEntity user = userRepository.findByAuthSubjectIgnoreCase(normalizedAuthSubject)
                     .orElseThrow(() -> new NotFoundException("No user profile is linked to the authenticated account."));
             if (fallbackUserId != null && !fallbackUserId.equals(user.getId())) {
                 throw new ConflictException("Authenticated user cannot perform actions for another user.");
@@ -554,14 +554,14 @@ public class NeverestCoreService {
         if (value == null || value.isBlank()) {
             return null;
         }
-        return value.trim();
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 
     private String normalizeRequired(String value, String fieldName) {
         if (value == null || value.isBlank()) {
             throw new BadRequestException(fieldName + " is required.");
         }
-        return value.trim();
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 
     private int requirePositive(Integer value, String fieldName) {
