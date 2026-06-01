@@ -39,6 +39,9 @@ public class RewardEntity {
     @Column(name = "version", nullable = false)
     private long version;
 
+    @Column(name = "address", length = 300)
+    private String address;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -51,7 +54,8 @@ public class RewardEntity {
             String partnerName,
             String description,
             int pointsCost,
-            Integer stock
+            Integer stock,
+            String address
     ) {
         this.id = id;
         this.title = title;
@@ -59,7 +63,19 @@ public class RewardEntity {
         this.description = description;
         this.pointsCost = pointsCost;
         this.stock = stock;
+        this.address = address;
         this.active = true;
+    }
+
+    public RewardEntity(
+            UUID id,
+            String title,
+            String partnerName,
+            String description,
+            int pointsCost,
+            Integer stock
+    ) {
+        this(id, title, partnerName, description, pointsCost, stock, null);
     }
 
     @PrePersist
@@ -95,6 +111,14 @@ public class RewardEntity {
 
     public boolean isActive() {
         return active;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public boolean consumeOneStock() {

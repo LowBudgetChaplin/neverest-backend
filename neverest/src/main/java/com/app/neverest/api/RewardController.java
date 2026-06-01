@@ -154,7 +154,8 @@ public class RewardController {
                 reward.description(),
                 reward.pointsCost(),
                 reward.stock(),
-                reward.active()
+                reward.active(),
+                reward.address()
         );
     }
 

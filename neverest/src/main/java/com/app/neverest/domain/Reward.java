@@ -9,6 +9,7 @@ public class Reward {
     private final String partnerName;
     private final String description;
     private final int pointsCost;
+    private final String address;
     private Integer stock;
     private boolean active;
 
@@ -20,7 +21,7 @@ public class Reward {
             int pointsCost,
             Integer stock
     ) {
-        this(id, title, partnerName, description, pointsCost, stock, true);
+        this(id, title, partnerName, description, pointsCost, stock, true, null);
     }
 
     public Reward(
@@ -32,6 +33,19 @@ public class Reward {
             Integer stock,
             boolean active
     ) {
+        this(id, title, partnerName, description, pointsCost, stock, active, null);
+    }
+
+    public Reward(
+            UUID id,
+            String title,
+            String partnerName,
+            String description,
+            int pointsCost,
+            Integer stock,
+            boolean active,
+            String address
+    ) {
         this.id = id;
         this.title = title;
         this.partnerName = partnerName;
@@ -39,6 +53,7 @@ public class Reward {
         this.pointsCost = pointsCost;
         this.stock = stock;
         this.active = active;
+        this.address = address;
     }
 
     public UUID id() {
@@ -67,6 +82,10 @@ public class Reward {
 
     public synchronized boolean active() {
         return active;
+    }
+
+    public String address() {
+        return address;
     }
 
     public synchronized boolean consumeOneStock() {

@@ -241,6 +241,13 @@ public class NeverestCoreService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public Challenge getChallengeById(UUID challengeId) {
+        return challengeRepository.findById(challengeId)
+                .map(this::toDomain)
+                .orElse(null);
+    }
+
     @Transactional
     public ChallengeSubmission submitChallenge(
             UUID challengeId,
@@ -716,7 +723,8 @@ public class NeverestCoreService {
                 reward.getDescription(),
                 reward.getPointsCost(),
                 reward.getStock(),
-                reward.isActive()
+                reward.isActive(),
+                reward.getAddress()
         );
     }
 

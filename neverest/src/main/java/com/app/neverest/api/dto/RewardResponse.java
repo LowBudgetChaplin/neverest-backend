@@ -9,6 +9,7 @@ public record RewardResponse(
         String description,
         int pointsCost,
         Integer stock,
-        boolean active
+        boolean active,
+        String address
 ) {
 }
