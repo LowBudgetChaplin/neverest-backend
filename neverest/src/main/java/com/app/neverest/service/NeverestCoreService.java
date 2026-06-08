@@ -110,6 +110,25 @@ public class NeverestCoreService {
             LocalDateTime startsAt,
             Integer pointsReward
     ) {
+        return createEvent(
+                title, activityType, location, startsAt, pointsReward,
+                null, com.app.neverest.domain.EventRecurrence.NONE, null, null, null
+        );
+    }
+
+    @Transactional
+    public Event createEvent(
+            String title,
+            ActivityType activityType,
+            String location,
+            LocalDateTime startsAt,
+            Integer pointsReward,
+            String description,
+            com.app.neverest.domain.EventRecurrence recurrence,
+            String routeMapUrl,
+            String stravaClubUrl,
+            String whatsappGroupUrl
+    ) {
         String sanitizedTitle = requireNonBlank(title, "title");
         String sanitizedLocation = requireNonBlank(location, "location");
         int validPointsReward = requirePositive(pointsReward, "pointsReward");
@@ -127,7 +146,12 @@ public class NeverestCoreService {
                 activityType,
                 sanitizedLocation,
                 startsAt,
-                validPointsReward
+                validPointsReward,
+                description,
+                recurrence,
+                routeMapUrl,
+                stravaClubUrl,
+                whatsappGroupUrl
         );
 
         return toDomain(eventRepository.save(eventEntity));
@@ -659,12 +683,38 @@ public class NeverestCoreService {
         throw new ConflictException("Could not generate unique redemption code.");
     }
 
+    @Transactional
+    public UserProfile updateMyProfile(
+            String authSubject,
+            String displayName,
+            String phoneNumber,
+            String avatarB64
+    ) {
+        UserEntity user = userRepository.findByAuthSubjectIgnoreCase(authSubject)
+                .orElseThrow(() -> new NotFoundException("User not found for auth subject."));
+
+        if (displayName != null && !displayName.isBlank()) {
+            user.setDisplayName(displayName.trim());
+        }
+        // null means "no change"; empty string means "clear the field"
+        if (phoneNumber != null) {
+            user.setPhoneNumber(phoneNumber.isBlank() ? null : phoneNumber.trim());
+        }
+        if (avatarB64 != null) {
+            user.setAvatarB64(avatarB64.isBlank() ? null : avatarB64);
+        }
+
+        return toDomain(userRepository.save(user));
+    }
+
     private UserProfile toDomain(UserEntity user) {
         return new UserProfile(
                 user.getId(),
                 user.getDisplayName(),
                 user.getQrCode(),
                 user.getAuthSubject(),
+                user.getPhoneNumber(),
+                user.getAvatarB64(),
                 user.getTotalPoints(),
                 user.getAvailablePoints(),
                 user.getPointsPadel(),
@@ -680,7 +730,12 @@ public class NeverestCoreService {
                 event.getActivityType(),
                 event.getLocation(),
                 event.getStartsAt(),
-                event.getPointsReward()
+                event.getPointsReward(),
+                event.getDescription(),
+                event.getRecurrence(),
+                event.getRouteMapUrl(),
+                event.getStravaClubUrl(),
+                event.getWhatsappGroupUrl()
         );
     }
 

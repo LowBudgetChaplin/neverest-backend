@@ -75,12 +75,20 @@ public class LocalAuthService {
     }
 
     @Transactional
-    public void register(String email, String password, String displayName) {
+    public void register(
+            String email,
+            String password,
+            String displayName,
+            String phoneNumber,
+            String avatarB64
+    ) {
         String normalizedEmail = normalizeEmail(email);
         String rawPassword = requireNonBlank(password, "password");
         if (rawPassword.length() < 6) {
             throw new BadRequestException("password must contain at least 6 characters.");
         }
+        // Phone number is mandatory at registration.
+        String normalizedPhone = requireNonBlank(phoneNumber, "phoneNumber");
 
         if (userRepository.findByAuthSubjectIgnoreCase(normalizedEmail).isPresent()) {
             throw new ConflictException("An account with this email already exists.");
@@ -97,6 +105,10 @@ public class LocalAuthService {
                 passwordEncoder.encode(rawPassword),
                 "USER"
         );
+        user.setPhoneNumber(normalizedPhone);
+        if (avatarB64 != null && !avatarB64.isBlank()) {
+            user.setAvatarB64(avatarB64);
+        }
 
         userRepository.save(user);
     }

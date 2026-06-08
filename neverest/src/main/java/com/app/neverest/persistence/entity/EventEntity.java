@@ -1,6 +1,7 @@
 package com.app.neverest.persistence.entity;
 
 import com.app.neverest.domain.ActivityType;
+import com.app.neverest.domain.EventRecurrence;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,6 +36,22 @@ public class EventEntity {
     @Column(name = "points_reward", nullable = false)
     private int pointsReward;
 
+    @Column(name = "description", length = 700)
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "recurrence", nullable = false, length = 32)
+    private EventRecurrence recurrence = EventRecurrence.NONE;
+
+    @Column(name = "route_map_url", length = 500)
+    private String routeMapUrl;
+
+    @Column(name = "strava_club_url", length = 300)
+    private String stravaClubUrl;
+
+    @Column(name = "whatsapp_group_url", length = 300)
+    private String whatsappGroupUrl;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -49,12 +66,34 @@ public class EventEntity {
             LocalDateTime startsAt,
             int pointsReward
     ) {
+        this(id, title, activityType, location, startsAt, pointsReward,
+                null, EventRecurrence.NONE, null, null, null);
+    }
+
+    public EventEntity(
+            UUID id,
+            String title,
+            ActivityType activityType,
+            String location,
+            LocalDateTime startsAt,
+            int pointsReward,
+            String description,
+            EventRecurrence recurrence,
+            String routeMapUrl,
+            String stravaClubUrl,
+            String whatsappGroupUrl
+    ) {
         this.id = id;
         this.title = title;
         this.activityType = activityType;
         this.location = location;
         this.startsAt = startsAt;
         this.pointsReward = pointsReward;
+        this.description = description;
+        this.recurrence = recurrence != null ? recurrence : EventRecurrence.NONE;
+        this.routeMapUrl = routeMapUrl;
+        this.stravaClubUrl = stravaClubUrl;
+        this.whatsappGroupUrl = whatsappGroupUrl;
     }
 
     @PrePersist
@@ -62,29 +101,20 @@ public class EventEntity {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        if (recurrence == null) {
+            recurrence = EventRecurrence.NONE;
+        }
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public ActivityType getActivityType() {
-        return activityType;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public LocalDateTime getStartsAt() {
-        return startsAt;
-    }
-
-    public int getPointsReward() {
-        return pointsReward;
-    }
+    public UUID getId() { return id; }
+    public String getTitle() { return title; }
+    public ActivityType getActivityType() { return activityType; }
+    public String getLocation() { return location; }
+    public LocalDateTime getStartsAt() { return startsAt; }
+    public int getPointsReward() { return pointsReward; }
+    public String getDescription() { return description; }
+    public EventRecurrence getRecurrence() { return recurrence; }
+    public String getRouteMapUrl() { return routeMapUrl; }
+    public String getStravaClubUrl() { return stravaClubUrl; }
+    public String getWhatsappGroupUrl() { return whatsappGroupUrl; }
 }

@@ -11,6 +11,8 @@ public record UserResponse(
         String authSubject,
         int totalPoints,
         int availablePoints,
-        Map<ActivityType, Integer> pointsByActivity
+        Map<ActivityType, Integer> pointsByActivity,
+        String phoneNumber,
+        String avatarB64
 ) {
 }

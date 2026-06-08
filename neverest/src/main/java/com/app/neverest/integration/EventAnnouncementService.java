@@ -8,6 +8,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,8 @@ public class EventAnnouncementService {
     private final HttpClient httpClient;
     private final boolean whatsappEnabled;
     private final String whatsappWebhookUrl;
+    private final String whatsappToken;
+    private final String whatsappGroupId;
     private final boolean stravaEnabled;
     private final String stravaWebhookUrl;
     private final int timeoutSeconds;
@@ -24,6 +28,8 @@ public class EventAnnouncementService {
     public EventAnnouncementService(
             @Value("${neverest.integrations.whatsapp.enabled:false}") boolean whatsappEnabled,
             @Value("${neverest.integrations.whatsapp.webhook-url:}") String whatsappWebhookUrl,
+            @Value("${neverest.integrations.whatsapp.token:}") String whatsappToken,
+            @Value("${neverest.integrations.whatsapp.group-id:}") String whatsappGroupId,
             @Value("${neverest.integrations.strava.enabled:false}") boolean stravaEnabled,
             @Value("${neverest.integrations.strava.webhook-url:}") String stravaWebhookUrl,
             @Value("${neverest.integrations.timeout-seconds:5}") int timeoutSeconds
@@ -33,6 +39,8 @@ public class EventAnnouncementService {
                 .build();
         this.whatsappEnabled = whatsappEnabled;
         this.whatsappWebhookUrl = whatsappWebhookUrl == null ? "" : whatsappWebhookUrl.trim();
+        this.whatsappToken = whatsappToken == null ? "" : whatsappToken.trim();
+        this.whatsappGroupId = whatsappGroupId == null ? "" : whatsappGroupId.trim();
         this.stravaEnabled = stravaEnabled;
         this.stravaWebhookUrl = stravaWebhookUrl == null ? "" : stravaWebhookUrl.trim();
         this.timeoutSeconds = Math.max(timeoutSeconds, 1);
@@ -47,6 +55,10 @@ public class EventAnnouncementService {
 
     public AnnouncementDispatchResult dispatchEventCreated(AnnouncementChannel channel, Event event) {
         if (channel == AnnouncementChannel.WHATSAPP) {
+            // Direct WhatsApp gateway mode (Whapi.Cloud) when a token + group id are configured.
+            if (whatsappEnabled && !whatsappToken.isBlank() && !whatsappGroupId.isBlank()) {
+                return dispatchWhapi(event);
+            }
             return dispatch(channel, whatsappEnabled, whatsappWebhookUrl, event);
         }
         if (channel == AnnouncementChannel.STRAVA) {
@@ -54,6 +66,45 @@ public class EventAnnouncementService {
         }
 
         return new AnnouncementDispatchResult(channel, false, false, null, "Unsupported channel.");
+    }
+
+    /**
+     * Posts the announcement straight to the Whapi.Cloud send-text endpoint:
+     *   POST {webhook-url}  Authorization: Bearer {token}
+     *   { "to": "{group-id}", "body": "{message}" }
+     */
+    private AnnouncementDispatchResult dispatchWhapi(Event event) {
+        if (whatsappWebhookUrl.isBlank()) {
+            return new AnnouncementDispatchResult(
+                    AnnouncementChannel.WHATSAPP, false, false, null, "WhatsApp gateway URL not configured.");
+        }
+
+        String body = "{"
+                + "\"to\":\"" + escapeJson(whatsappGroupId) + "\","
+                + "\"body\":\"" + escapeJson(buildMessage(event)) + "\""
+                + "}";
+
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(whatsappWebhookUrl))
+                    .timeout(Duration.ofSeconds(timeoutSeconds))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + whatsappToken)
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            boolean success = response.statusCode() >= 200 && response.statusCode() < 300;
+            String detail = success
+                    ? "Delivered to WhatsApp group."
+                    : "Whapi responded with status " + response.statusCode() + ": " + response.body();
+
+            return new AnnouncementDispatchResult(
+                    AnnouncementChannel.WHATSAPP, true, success, response.statusCode(), detail);
+        } catch (Exception exception) {
+            return new AnnouncementDispatchResult(
+                    AnnouncementChannel.WHATSAPP, true, false, null, "Delivery error: " + exception.getMessage());
+        }
     }
 
     private AnnouncementDispatchResult dispatch(
@@ -91,12 +142,62 @@ public class EventAnnouncementService {
         }
     }
 
-    public String buildPayload(AnnouncementChannel channel, Event event) {
-        String message = "Nou eveniment: " + event.title()
-                + " | " + event.activityType().name()
-                + " | " + event.location()
-                + " | startsAt=" + event.startsAt();
+    /** Human-readable announcement text (shared by Whapi + generic webhook). */
+    public String buildMessage(Event event) {
+        StringBuilder msg = new StringBuilder();
+        msg.append("🏃 Eveniment nou: ").append(event.title())
+                .append("\n📍 ").append(event.location())
+                .append("\n🗓️ ").append(event.startsAt())
+                .append("\n⚡ +").append(event.pointsReward()).append(" puncte");
+        if (event.description() != null && !event.description().isBlank()) {
+            msg.append("\n\n").append(event.description());
+        }
+        String mapUrl = cleanMapUrl(event.routeMapUrl());
+        if (mapUrl != null) {
+            msg.append("\n🗺️ Traseu: ").append(mapUrl);
+        }
+        return msg.toString();
+    }
 
+    /**
+     * Turns whatever the admin saved in routeMapUrl into a clean, openable
+     * Google Maps link:
+     *  - strips a full {@code <iframe src="...">} snippet down to the URL,
+     *  - converts a Maps *embed* URL (which only works inside an iframe) into a
+     *    normal {@code .../maps/search/?api=1&query=lat,lng} link.
+     */
+    static String cleanMapUrl(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String url = raw.trim();
+
+        Matcher src = Pattern.compile("src\\s*=\\s*\"([^\"]+)\"").matcher(url);
+        if (src.find()) {
+            url = src.group(1);
+        } else {
+            Matcher src2 = Pattern.compile("src\\s*=\\s*'([^']+)'").matcher(url);
+            if (src2.find()) {
+                url = src2.group(1);
+            }
+        }
+
+        if (!url.startsWith("http")) {
+            return null;
+        }
+
+        if (url.contains("/maps/embed")) {
+            Matcher lng = Pattern.compile("!2d(-?\\d+(?:\\.\\d+)?)").matcher(url);
+            Matcher lat = Pattern.compile("!3d(-?\\d+(?:\\.\\d+)?)").matcher(url);
+            if (lng.find() && lat.find()) {
+                return "https://www.google.com/maps/search/?api=1&query="
+                        + lat.group(1) + "," + lng.group(1);
+            }
+        }
+        return url;
+    }
+
+    public String buildPayload(AnnouncementChannel channel, Event event) {
         return "{"
                 + "\"type\":\"EVENT_CREATED\","
                 + "\"channel\":\"" + escapeJson(channel.name()) + "\","
@@ -106,7 +207,12 @@ public class EventAnnouncementService {
                 + "\"location\":\"" + escapeJson(event.location()) + "\","
                 + "\"startsAt\":\"" + escapeJson(event.startsAt().toString()) + "\","
                 + "\"pointsReward\":" + event.pointsReward() + ","
-                + "\"message\":\"" + escapeJson(message) + "\""
+                + "\"recurrence\":\"" + escapeJson(event.recurrence() == null ? "NONE" : event.recurrence().name()) + "\","
+                + "\"description\":\"" + escapeJson(event.description()) + "\","
+                + "\"routeMapUrl\":\"" + escapeJson(event.routeMapUrl()) + "\","
+                + "\"stravaClubUrl\":\"" + escapeJson(event.stravaClubUrl()) + "\","
+                + "\"whatsappGroupUrl\":\"" + escapeJson(event.whatsappGroupUrl()) + "\","
+                + "\"message\":\"" + escapeJson(buildMessage(event)) + "\""
                 + "}";
     }
 

@@ -20,6 +20,12 @@ public class UserEntity {
     @Column(name = "display_name", nullable = false, length = 120)
     private String displayName;
 
+    @Column(name = "phone_number", length = 30)
+    private String phoneNumber;
+
+    @Column(name = "avatar_b64", columnDefinition = "MEDIUMTEXT")
+    private String avatarB64;
+
     @Column(name = "qr_code", nullable = false, length = 32, unique = true)
     private String qrCode;
 
@@ -89,8 +95,28 @@ public class UserEntity {
         return id;
     }
 
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
     public String getDisplayName() {
         return displayName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getAvatarB64() {
+        return avatarB64;
+    }
+
+    public void setAvatarB64(String avatarB64) {
+        this.avatarB64 = avatarB64;
     }
 
     public String getQrCode() {

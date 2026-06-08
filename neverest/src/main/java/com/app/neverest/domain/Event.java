@@ -11,6 +11,11 @@ public class Event {
     private final String location;
     private final LocalDateTime startsAt;
     private final int pointsReward;
+    private final String description;
+    private final EventRecurrence recurrence;
+    private final String routeMapUrl;
+    private final String stravaClubUrl;
+    private final String whatsappGroupUrl;
 
     public Event(
             UUID id,
@@ -18,7 +23,12 @@ public class Event {
             ActivityType activityType,
             String location,
             LocalDateTime startsAt,
-            int pointsReward
+            int pointsReward,
+            String description,
+            EventRecurrence recurrence,
+            String routeMapUrl,
+            String stravaClubUrl,
+            String whatsappGroupUrl
     ) {
         this.id = id;
         this.title = title;
@@ -26,29 +36,22 @@ public class Event {
         this.location = location;
         this.startsAt = startsAt;
         this.pointsReward = pointsReward;
+        this.description = description;
+        this.recurrence = recurrence;
+        this.routeMapUrl = routeMapUrl;
+        this.stravaClubUrl = stravaClubUrl;
+        this.whatsappGroupUrl = whatsappGroupUrl;
     }
 
-    public UUID id() {
-        return id;
-    }
-
-    public String title() {
-        return title;
-    }
-
-    public ActivityType activityType() {
-        return activityType;
-    }
-
-    public String location() {
-        return location;
-    }
-
-    public LocalDateTime startsAt() {
-        return startsAt;
-    }
-
-    public int pointsReward() {
-        return pointsReward;
-    }
+    public UUID id() { return id; }
+    public String title() { return title; }
+    public ActivityType activityType() { return activityType; }
+    public String location() { return location; }
+    public LocalDateTime startsAt() { return startsAt; }
+    public int pointsReward() { return pointsReward; }
+    public String description() { return description; }
+    public EventRecurrence recurrence() { return recurrence; }
+    public String routeMapUrl() { return routeMapUrl; }
+    public String stravaClubUrl() { return stravaClubUrl; }
+    public String whatsappGroupUrl() { return whatsappGroupUrl; }
 }

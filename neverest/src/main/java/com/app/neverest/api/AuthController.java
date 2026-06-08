@@ -50,7 +50,13 @@ public class AuthController {
             throw new BadRequestException("Request body is required.");
         }
         try {
-            localAuthService.register(request.email(), request.password(), request.displayName());
+            localAuthService.register(
+                    request.email(),
+                    request.password(),
+                    request.displayName(),
+                    request.phoneNumber(),
+                    request.avatarB64()
+            );
         } catch (ConflictException exception) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage());
         }

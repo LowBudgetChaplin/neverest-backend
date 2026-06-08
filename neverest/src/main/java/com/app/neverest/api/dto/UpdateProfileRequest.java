@@ -1,8 +1,6 @@
 package com.app.neverest.api.dto;
 
-public record RegisterRequest(
-        String email,
-        String password,
+public record UpdateProfileRequest(
         String displayName,
         String phoneNumber,
         String avatarB64

@@ -56,7 +56,12 @@ public class EventController {
                 request.activityType(),
                 request.location(),
                 request.startsAt(),
-                request.pointsReward()
+                request.pointsReward(),
+                request.description(),
+                request.recurrence(),
+                request.routeMapUrl(),
+                request.stravaClubUrl(),
+                request.whatsappGroupUrl()
         );
 
         List<AnnouncementDispatchResult> announcementResults = announcementTaskService.dispatchOnEventCreated(event);
@@ -165,7 +170,12 @@ public class EventController {
                 event.activityType(),
                 event.location(),
                 event.startsAt(),
-                event.pointsReward()
+                event.pointsReward(),
+                event.description(),
+                event.recurrence(),
+                event.routeMapUrl(),
+                event.stravaClubUrl(),
+                event.whatsappGroupUrl()
         );
     }
 

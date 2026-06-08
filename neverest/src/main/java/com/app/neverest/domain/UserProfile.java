@@ -7,19 +7,21 @@ import java.util.UUID;
 public class UserProfile {
 
     private final UUID id;
-    private final String displayName;
+    private String displayName;
     private final String qrCode;
     private final String authSubject;
+    private String phoneNumber;
+    private String avatarB64;
     private int totalPoints;
     private int availablePoints;
     private final EnumMap<ActivityType, Integer> pointsByActivity;
 
     public UserProfile(UUID id, String displayName, String qrCode) {
-        this(id, displayName, qrCode, null, 0, 0, 0, 0, 0);
+        this(id, displayName, qrCode, null, null, null, 0, 0, 0, 0, 0);
     }
 
     public UserProfile(UUID id, String displayName, String qrCode, String authSubject) {
-        this(id, displayName, qrCode, authSubject, 0, 0, 0, 0, 0);
+        this(id, displayName, qrCode, authSubject, null, null, 0, 0, 0, 0, 0);
     }
 
     public UserProfile(
@@ -27,6 +29,8 @@ public class UserProfile {
             String displayName,
             String qrCode,
             String authSubject,
+            String phoneNumber,
+            String avatarB64,
             int totalPoints,
             int availablePoints,
             int pointsPadel,
@@ -37,6 +41,8 @@ public class UserProfile {
         this.displayName = displayName;
         this.qrCode = qrCode;
         this.authSubject = authSubject;
+        this.phoneNumber = phoneNumber;
+        this.avatarB64 = avatarB64;
         this.totalPoints = totalPoints;
         this.availablePoints = availablePoints;
         this.pointsByActivity = new EnumMap<>(ActivityType.class);
@@ -45,33 +51,19 @@ public class UserProfile {
         pointsByActivity.put(ActivityType.RUNNING, pointsRunning);
     }
 
-    public UUID id() {
-        return id;
-    }
+    public UUID id() { return id; }
+    public String displayName() { return displayName; }
+    public void setDisplayName(String displayName) { this.displayName = displayName; }
+    public String qrCode() { return qrCode; }
+    public String authSubject() { return authSubject; }
+    public String phoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public String avatarB64() { return avatarB64; }
+    public void setAvatarB64(String avatarB64) { this.avatarB64 = avatarB64; }
 
-    public String displayName() {
-        return displayName;
-    }
-
-    public String qrCode() {
-        return qrCode;
-    }
-
-    public String authSubject() {
-        return authSubject;
-    }
-
-    public synchronized int totalPoints() {
-        return totalPoints;
-    }
-
-    public synchronized int availablePoints() {
-        return availablePoints;
-    }
-
-    public Map<ActivityType, Integer> pointsByActivity() {
-        return Map.copyOf(pointsByActivity);
-    }
+    public synchronized int totalPoints() { return totalPoints; }
+    public synchronized int availablePoints() { return availablePoints; }
+    public Map<ActivityType, Integer> pointsByActivity() { return Map.copyOf(pointsByActivity); }
 
     public int pointsForActivity(ActivityType activityType) {
         return pointsByActivity.getOrDefault(activityType, 0);
@@ -84,13 +76,7 @@ public class UserProfile {
     }
 
     public synchronized boolean spendPoints(int points) {
-        if (points <= 0) {
-            return false;
-        }
-        if (availablePoints < points) {
-            return false;
-        }
-
+        if (points <= 0 || availablePoints < points) return false;
         availablePoints -= points;
         return true;
     }
