@@ -73,10 +73,12 @@ public class ChallengeController {
     }
 
     @GetMapping
-    public List<ChallengeResponse> getChallenges() {
+    public List<ChallengeResponse> getChallenges(Authentication authentication) {
+        UUID userId = coreService.findUserIdByAuthSubjectOrNull(AuthUtils.subjectOrNull(authentication));
+        java.util.Set<UUID> completedIds = coreService.getCompletedChallengeIds(userId);
         return coreService.getChallenges()
                 .stream()
-                .map(this::toResponse)
+                .map(challenge -> toResponse(challenge, completedIds.contains(challenge.id())))
                 .toList();
     }
 
@@ -214,6 +216,10 @@ public class ChallengeController {
     }
 
     private ChallengeResponse toResponse(Challenge challenge) {
+        return toResponse(challenge, false);
+    }
+
+    private ChallengeResponse toResponse(Challenge challenge, boolean completed) {
         return new ChallengeResponse(
                 challenge.id(),
                 challenge.title(),
@@ -225,7 +231,8 @@ public class ChallengeController {
                 challenge.endsAt(),
                 challenge.pointsReward(),
                 challenge.targetValue(),
-                challenge.targetUnit()
+                challenge.targetUnit(),
+                completed
         );
     }
 

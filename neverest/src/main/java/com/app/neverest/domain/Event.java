@@ -11,6 +11,8 @@ public class Event {
     private final String location;
     private final LocalDateTime startsAt;
     private final int pointsReward;
+    private final Integer capacity;
+    private final int attendeeCount;
     private final String description;
     private final EventRecurrence recurrence;
     private final String routeMapUrl;
@@ -24,6 +26,8 @@ public class Event {
             String location,
             LocalDateTime startsAt,
             int pointsReward,
+            Integer capacity,
+            int attendeeCount,
             String description,
             EventRecurrence recurrence,
             String routeMapUrl,
@@ -36,6 +40,8 @@ public class Event {
         this.location = location;
         this.startsAt = startsAt;
         this.pointsReward = pointsReward;
+        this.capacity = capacity;
+        this.attendeeCount = attendeeCount;
         this.description = description;
         this.recurrence = recurrence;
         this.routeMapUrl = routeMapUrl;
@@ -49,6 +55,8 @@ public class Event {
     public String location() { return location; }
     public LocalDateTime startsAt() { return startsAt; }
     public int pointsReward() { return pointsReward; }
+    public Integer capacity() { return capacity; }
+    public int attendeeCount() { return attendeeCount; }
     public String description() { return description; }
     public EventRecurrence recurrence() { return recurrence; }
     public String routeMapUrl() { return routeMapUrl; }

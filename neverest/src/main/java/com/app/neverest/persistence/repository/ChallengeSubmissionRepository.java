@@ -1,5 +1,6 @@
 package com.app.neverest.persistence.repository;
 
+import com.app.neverest.domain.ChallengeSubmissionStatus;
 import com.app.neverest.persistence.entity.ChallengeSubmissionEntity;
 import jakarta.persistence.LockModeType;
 import java.util.List;
@@ -13,6 +14,8 @@ import org.springframework.data.repository.query.Param;
 public interface ChallengeSubmissionRepository extends JpaRepository<ChallengeSubmissionEntity, UUID> {
 
     boolean existsByChallengeIdAndUserId(UUID challengeId, UUID userId);
+
+    List<ChallengeSubmissionEntity> findByUserIdAndStatus(UUID userId, ChallengeSubmissionStatus status);
 
     List<ChallengeSubmissionEntity> findByChallengeIdOrderBySubmittedAtDesc(UUID challengeId);
 

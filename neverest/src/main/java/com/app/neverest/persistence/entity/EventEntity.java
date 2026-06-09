@@ -36,6 +36,9 @@ public class EventEntity {
     @Column(name = "points_reward", nullable = false)
     private int pointsReward;
 
+    @Column(name = "capacity")
+    private Integer capacity;
+
     @Column(name = "description", length = 700)
     private String description;
 
@@ -67,7 +70,7 @@ public class EventEntity {
             int pointsReward
     ) {
         this(id, title, activityType, location, startsAt, pointsReward,
-                null, EventRecurrence.NONE, null, null, null);
+                null, null, EventRecurrence.NONE, null, null, null);
     }
 
     public EventEntity(
@@ -77,6 +80,7 @@ public class EventEntity {
             String location,
             LocalDateTime startsAt,
             int pointsReward,
+            Integer capacity,
             String description,
             EventRecurrence recurrence,
             String routeMapUrl,
@@ -89,6 +93,7 @@ public class EventEntity {
         this.location = location;
         this.startsAt = startsAt;
         this.pointsReward = pointsReward;
+        this.capacity = capacity;
         this.description = description;
         this.recurrence = recurrence != null ? recurrence : EventRecurrence.NONE;
         this.routeMapUrl = routeMapUrl;
@@ -112,6 +117,7 @@ public class EventEntity {
     public String getLocation() { return location; }
     public LocalDateTime getStartsAt() { return startsAt; }
     public int getPointsReward() { return pointsReward; }
+    public Integer getCapacity() { return capacity; }
     public String getDescription() { return description; }
     public EventRecurrence getRecurrence() { return recurrence; }
     public String getRouteMapUrl() { return routeMapUrl; }

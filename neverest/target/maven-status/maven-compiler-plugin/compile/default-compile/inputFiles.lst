@@ -24,6 +24,7 @@ A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\RewardResponse.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\SubmitChallengeRequest.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\UpdateProfileRequest.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\UpdateRewardRequest.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\UserResponse.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\EventController.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\LeaderboardController.java

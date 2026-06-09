@@ -1,16 +1,14 @@
 package com.app.neverest.api.dto;
 
-import java.util.UUID;
-
-public record RewardResponse(
-        UUID id,
+public record UpdateRewardRequest(
         String title,
         String partnerName,
         String description,
-        int pointsCost,
+        Integer pointsCost,
         Integer stock,
-        boolean active,
+        Boolean clearStock,
         String address,
-        String imageB64
+        String imageB64,
+        Boolean clearImage
 ) {
 }

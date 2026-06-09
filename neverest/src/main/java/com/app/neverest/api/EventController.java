@@ -57,6 +57,7 @@ public class EventController {
                 request.location(),
                 request.startsAt(),
                 request.pointsReward(),
+                request.capacity(),
                 request.description(),
                 request.recurrence(),
                 request.routeMapUrl(),
@@ -132,8 +133,12 @@ public class EventController {
         return new CheckInResponse(
                 checkInResult.eventId(),
                 checkInResult.userId(),
+                checkInResult.userName(),
+                checkInResult.userAvatarB64(),
                 checkInResult.pointsAwarded(),
-                checkInResult.updatedTotalPoints()
+                checkInResult.updatedTotalPoints(),
+                checkInResult.checkInCount(),
+                checkInResult.capacity()
         );
     }
 
@@ -171,6 +176,8 @@ public class EventController {
                 event.location(),
                 event.startsAt(),
                 event.pointsReward(),
+                event.capacity(),
+                event.attendeeCount(),
                 event.description(),
                 event.recurrence(),
                 event.routeMapUrl(),

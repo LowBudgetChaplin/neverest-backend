@@ -10,6 +10,7 @@ public record CreateEventRequest(
         String location,
         LocalDateTime startsAt,
         Integer pointsReward,
+        Integer capacity,
         String description,
         EventRecurrence recurrence,
         String routeMapUrl,

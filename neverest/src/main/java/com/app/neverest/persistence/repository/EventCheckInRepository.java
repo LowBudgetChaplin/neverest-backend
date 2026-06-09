@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface EventCheckInRepository extends JpaRepository<EventCheckInEntity, UUID> {
 
     boolean existsByEventIdAndUserId(UUID eventId, UUID userId);
+
+    long countByEventId(UUID eventId);
 }

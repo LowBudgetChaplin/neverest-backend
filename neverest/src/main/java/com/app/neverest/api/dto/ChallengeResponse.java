@@ -17,6 +17,7 @@ public record ChallengeResponse(
         LocalDateTime endsAt,
         int pointsReward,
         Double targetValue,
-        String targetUnit
+        String targetUnit,
+        boolean completed
 ) {
 }

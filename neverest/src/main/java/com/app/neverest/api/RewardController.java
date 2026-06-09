@@ -4,6 +4,7 @@ import com.app.neverest.api.dto.CreateRewardRequest;
 import com.app.neverest.api.dto.RedeemRewardRequest;
 import com.app.neverest.api.dto.RewardRedemptionResponse;
 import com.app.neverest.api.dto.RewardResponse;
+import com.app.neverest.api.dto.UpdateRewardRequest;
 import com.app.neverest.audit.AuditLogService;
 import com.app.neverest.common.AuthUtils;
 import com.app.neverest.common.BadRequestException;
@@ -16,6 +17,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -60,6 +62,41 @@ public class RewardController {
                         "rewardId", reward.id().toString(),
                         "pointsCost", String.valueOf(reward.pointsCost())
                 )
+        );
+
+        return toResponse(reward);
+    }
+
+    @PatchMapping("/{rewardId}")
+    @ResponseStatus(HttpStatus.OK)
+    public RewardResponse updateReward(
+            @PathVariable UUID rewardId,
+            @RequestBody UpdateRewardRequest request,
+            Authentication authentication
+    ) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required.");
+        }
+
+        Reward reward = coreService.updateReward(
+                rewardId,
+                request.title(),
+                request.partnerName(),
+                request.description(),
+                request.pointsCost(),
+                request.stock(),
+                Boolean.TRUE.equals(request.clearStock()),
+                request.address(),
+                request.imageB64(),
+                Boolean.TRUE.equals(request.clearImage())
+        );
+
+        auditLogService.log(
+                "REWARD_UPDATED",
+                AuthUtils.actor(authentication),
+                true,
+                "Reward updated successfully.",
+                Map.of("rewardId", reward.id().toString())
         );
 
         return toResponse(reward);
@@ -155,7 +192,8 @@ public class RewardController {
                 reward.pointsCost(),
                 reward.stock(),
                 reward.active(),
-                reward.address()
+                reward.address(),
+                reward.imageB64()
         );
     }
 

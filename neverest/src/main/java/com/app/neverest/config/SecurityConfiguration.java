@@ -57,6 +57,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/api/v1/challenges/*/submissions").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/challenges/*/submissions/*/review").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/rewards").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/rewards/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/rewards/redemptions").hasRole("ADMIN")
                         .requestMatchers("/api/v1/**").authenticated()
                         .anyRequest().permitAll()

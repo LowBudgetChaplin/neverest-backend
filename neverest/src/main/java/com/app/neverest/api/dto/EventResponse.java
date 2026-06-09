@@ -12,6 +12,8 @@ public record EventResponse(
         String location,
         LocalDateTime startsAt,
         int pointsReward,
+        Integer capacity,
+        int attendeeCount,
         String description,
         EventRecurrence recurrence,
         String routeMapUrl,

@@ -112,7 +112,7 @@ public class NeverestCoreService {
     ) {
         return createEvent(
                 title, activityType, location, startsAt, pointsReward,
-                null, com.app.neverest.domain.EventRecurrence.NONE, null, null, null
+                null, null, com.app.neverest.domain.EventRecurrence.NONE, null, null, null
         );
     }
 
@@ -123,6 +123,7 @@ public class NeverestCoreService {
             String location,
             LocalDateTime startsAt,
             Integer pointsReward,
+            Integer capacity,
             String description,
             com.app.neverest.domain.EventRecurrence recurrence,
             String routeMapUrl,
@@ -139,6 +140,10 @@ public class NeverestCoreService {
         if (startsAt == null) {
             throw new BadRequestException("startsAt is required.");
         }
+        // Capacity is optional, but when present it must be a positive number.
+        if (capacity != null && capacity <= 0) {
+            throw new BadRequestException("capacity must be a positive number when provided.");
+        }
 
         EventEntity eventEntity = new EventEntity(
                 UUID.randomUUID(),
@@ -147,6 +152,7 @@ public class NeverestCoreService {
                 sanitizedLocation,
                 startsAt,
                 validPointsReward,
+                capacity,
                 description,
                 recurrence,
                 routeMapUrl,
@@ -190,6 +196,12 @@ public class NeverestCoreService {
             throw new ConflictException("User already checked in for this event.");
         }
 
+        // Optional capacity: when set, reject once all spots are taken.
+        Integer capacity = event.getCapacity();
+        if (capacity != null && eventCheckInRepository.countByEventId(eventId) >= capacity) {
+            throw new ConflictException("EVENT_CAPACITY_EXCEEDED");
+        }
+
         try {
             eventCheckInRepository.save(new EventCheckInEntity(UUID.randomUUID(), eventId, user.getId()));
         } catch (DataIntegrityViolationException exception) {
@@ -199,7 +211,18 @@ public class NeverestCoreService {
         user.awardPoints(event.getActivityType(), event.getPointsReward());
         UserEntity updatedUser = userRepository.save(user);
 
-        return new CheckInResult(eventId, updatedUser.getId(), event.getPointsReward(), updatedUser.getTotalPoints());
+        int checkInCount = (int) eventCheckInRepository.countByEventId(eventId);
+
+        return new CheckInResult(
+                eventId,
+                updatedUser.getId(),
+                updatedUser.getDisplayName(),
+                updatedUser.getAvatarB64(),
+                event.getPointsReward(),
+                updatedUser.getTotalPoints(),
+                checkInCount,
+                capacity
+        );
     }
 
     @Transactional
@@ -263,6 +286,29 @@ public class NeverestCoreService {
                 .sorted(Comparator.comparing(ChallengeEntity::getStartsAt, Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(this::toDomain)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Set<UUID> getCompletedChallengeIds(UUID userId) {
+        if (userId == null) {
+            return java.util.Set.of();
+        }
+        return challengeSubmissionRepository
+                .findByUserIdAndStatus(userId, com.app.neverest.domain.ChallengeSubmissionStatus.APPROVED)
+                .stream()
+                .map(com.app.neverest.persistence.entity.ChallengeSubmissionEntity::getChallengeId)
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+
+    @Transactional(readOnly = true)
+    public UUID findUserIdByAuthSubjectOrNull(String authSubject) {
+        if (authSubject == null || authSubject.isBlank()) {
+            return null;
+        }
+        return userRepository.findByAuthSubjectIgnoreCase(authSubject.trim())
+                .map(com.app.neverest.persistence.entity.UserEntity::getId)
+                .orElse(null);
     }
 
     @Transactional(readOnly = true)
@@ -418,6 +464,57 @@ public class NeverestCoreService {
         return toDomain(rewardRepository.save(rewardEntity));
     }
 
+    @Transactional
+    public Reward updateReward(
+            UUID rewardId,
+            String title,
+            String partnerName,
+            String description,
+            Integer pointsCost,
+            Integer stock,
+            boolean clearStock,
+            String address,
+            String imageB64,
+            boolean clearImage
+    ) {
+        if (rewardId == null) {
+            throw new BadRequestException("rewardId is required.");
+        }
+        RewardEntity reward = rewardRepository.findById(rewardId)
+                .orElseThrow(() -> new NotFoundException("Reward not found."));
+
+        if (title != null && !title.isBlank()) {
+            reward.setTitle(title.trim());
+        }
+        if (partnerName != null && !partnerName.isBlank()) {
+            reward.setPartnerName(partnerName.trim());
+        }
+        if (description != null && !description.isBlank()) {
+            reward.setDescription(description.trim());
+        }
+        if (pointsCost != null) {
+            reward.setPointsCost(requirePositive(pointsCost, "pointsCost"));
+        }
+        if (clearStock) {
+            reward.setStock(null);
+        } else if (stock != null) {
+            if (stock <= 0) {
+                throw new BadRequestException("stock must be greater than 0.");
+            }
+            reward.setStock(stock);
+        }
+        if (address != null) {
+            reward.setAddress(address.isBlank() ? null : address.trim());
+        }
+        if (clearImage) {
+            reward.setImageB64(null);
+        } else if (imageB64 != null && !imageB64.isBlank()) {
+            reward.setImageB64(imageB64);
+        }
+
+        return toDomain(rewardRepository.save(reward));
+    }
+
     @Transactional(readOnly = true)
     public List<Reward> getRewards(Boolean includeInactive) {
         boolean shouldIncludeInactive = includeInactive != null && includeInactive;
@@ -529,6 +626,7 @@ public class NeverestCoreService {
         int normalizedLimit = normalizeLimit(limit);
         return userRepository.findAll()
                 .stream()
+                .filter(NeverestCoreService::isNotAdmin)
                 .sorted(
                         Comparator.comparingInt(UserEntity::getTotalPoints)
                                 .reversed()
@@ -548,6 +646,7 @@ public class NeverestCoreService {
         int normalizedLimit = normalizeLimit(limit);
         return userRepository.findAll()
                 .stream()
+                .filter(NeverestCoreService::isNotAdmin)
                 .sorted(
                         Comparator.comparingInt((UserEntity user) -> user.pointsFor(activityType))
                                 .reversed()
@@ -562,6 +661,10 @@ public class NeverestCoreService {
                         )
                 )
                 .toList();
+    }
+
+    private static boolean isNotAdmin(UserEntity user) {
+        return !"ADMIN".equalsIgnoreCase(user.getRole());
     }
 
     private int normalizeLimit(Integer rawLimit) {
@@ -696,7 +799,7 @@ public class NeverestCoreService {
         if (displayName != null && !displayName.isBlank()) {
             user.setDisplayName(displayName.trim());
         }
-        // null means "no change"; empty string means "clear the field"
+
         if (phoneNumber != null) {
             user.setPhoneNumber(phoneNumber.isBlank() ? null : phoneNumber.trim());
         }
@@ -724,6 +827,7 @@ public class NeverestCoreService {
     }
 
     private Event toDomain(EventEntity event) {
+        int attendeeCount = (int) eventCheckInRepository.countByEventId(event.getId());
         return new Event(
                 event.getId(),
                 event.getTitle(),
@@ -731,6 +835,8 @@ public class NeverestCoreService {
                 event.getLocation(),
                 event.getStartsAt(),
                 event.getPointsReward(),
+                event.getCapacity(),
+                attendeeCount,
                 event.getDescription(),
                 event.getRecurrence(),
                 event.getRouteMapUrl(),
@@ -779,7 +885,8 @@ public class NeverestCoreService {
                 reward.getPointsCost(),
                 reward.getStock(),
                 reward.isActive(),
-                reward.getAddress()
+                reward.getAddress(),
+                reward.getImageB64()
         );
     }
 
@@ -799,8 +906,12 @@ public class NeverestCoreService {
     public record CheckInResult(
             UUID eventId,
             UUID userId,
+            String userName,
+            String userAvatarB64,
             int pointsAwarded,
-            int updatedTotalPoints
+            int updatedTotalPoints,
+            int checkInCount,
+            Integer capacity
     ) {
     }
 

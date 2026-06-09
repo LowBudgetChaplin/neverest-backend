@@ -35,6 +35,7 @@ com\app\neverest\api\AdminController.class
 com\app\neverest\domain\UserProfile.class
 com\app\neverest\api\dto\MeResponse.class
 com\app\neverest\NeverestApplication.class
+com\app\neverest\api\dto\UpdateRewardRequest.class
 com\app\neverest\api\dto\CreateEventRequest.class
 com\app\neverest\audit\AuditLogService.class
 com\app\neverest\domain\RewardRedemption.class

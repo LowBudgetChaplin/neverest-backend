@@ -42,6 +42,9 @@ public class RewardEntity {
     @Column(name = "address", length = 300)
     private String address;
 
+    @Column(name = "image_b64", columnDefinition = "MEDIUMTEXT")
+    private String imageB64;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -119,6 +122,34 @@ public class RewardEntity {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getImageB64() {
+        return imageB64;
+    }
+
+    public void setImageB64(String imageB64) {
+        this.imageB64 = imageB64;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setPartnerName(String partnerName) {
+        this.partnerName = partnerName;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setPointsCost(int pointsCost) {
+        this.pointsCost = pointsCost;
+    }
+
+    public void setStock(Integer stock) {
+        this.stock = stock;
     }
 
     public boolean consumeOneStock() {
