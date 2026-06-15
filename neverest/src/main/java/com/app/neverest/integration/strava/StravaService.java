@@ -190,48 +190,112 @@ public class StravaService {
                     "Challenge-ul nu a fost găsit.", List.of(), 0);
         }
 
-        double requiredKm = challenge.targetValue() != null ? challenge.targetValue() : 0;
-        String activityType = mapActivityType(challenge.activityType().name());
+        // ── Determinăm criteriile țintă din challenge ────────────────────────────
+        // Un challenge se consideră îndeplinit dacă o activitate Strava satisface
+        // ORICARE dintre: distanță (km), elevație (m) sau numele/tipul activității.
+        // Astfel poți echivala running 7km cu un hike de 7km, sau valida un
+        // "turneu de padel" cu o activitate de fotbal/alergare (participare).
+        double targetValue = challenge.targetValue() != null ? challenge.targetValue() : 0;
+        String unit = challenge.targetUnit() == null ? "" : challenge.targetUnit().toLowerCase();
+        boolean isElevationTarget = unit.contains("elev") || unit.contains("d+")
+                || (challenge.activityType().name().equals("MOUNTAIN")
+                    && (unit.equals("m") || unit.contains("metri")));
 
-        // Fetch recent activities (last 20 for better coverage)
+        double targetDistanceMeters = 0;
+        double targetElevationMeters = 0;
+        if (targetValue > 0) {
+            if (unit.contains("km")) {
+                targetDistanceMeters = targetValue * 1000;
+            } else if (isElevationTarget) {
+                targetElevationMeters = targetValue;
+            } else if (unit.contains("m")) {
+                targetDistanceMeters = targetValue; // metri distanță
+            } else {
+                targetDistanceMeters = targetValue * 1000; // implicit km
+            }
+        }
+        final double tDist = targetDistanceMeters;
+        final double tElev = targetElevationMeters;
+        final boolean hasNumericTarget = tDist > 0 || tElev > 0;
+
+        double requiredKm = tDist > 0 ? tDist / 1000.0 : 0;
+
         List<StravaActivitySummary> activities = getRecentActivities(userId, 20);
 
-        // Find matching activities: same type + enough distance
+        // Sportul TREBUIE să corespundă (în grupul lui de echivalență), apoi se
+        // verifică ținta numerică (dacă există). Padel = doar padel, nu fotbal.
+        // Running ≈ hike (același grup de anduranță pe jos).
         List<StravaActivitySummary> matching = activities.stream()
-                .filter(a -> activityTypeMatches(a.type(), activityType))
-                .filter(a -> a.distanceMeters() >= requiredKm * 1000 * 0.95) // 5% tolerance
+                .filter(a -> {
+                    if (!sportMatches(a, challenge.activityType().name())) {
+                        return false; // sport greșit → nu validează
+                    }
+                    if (!hasNumericTarget) {
+                        return true; // sport corect + fără țintă numerică = participare
+                    }
+                    boolean distOk = tDist > 0 && a.distanceMeters() >= tDist * 0.95;
+                    boolean elevOk = tElev > 0 && a.totalElevationGain() >= tElev * 0.95;
+                    return distOk || elevOk;
+                })
                 .toList();
 
         if (matching.isEmpty()) {
-            String msg = requiredKm > 0
-                    ? String.format("Nu s-a găsit nicio activitate Strava de tip %s cu minim %.1f km.", activityType, requiredKm)
-                    : "Nu s-a găsit nicio activitate Strava potrivită.";
+            String sport = challenge.activityType().name().toLowerCase();
+            String msg;
+            if (tDist > 0) {
+                msg = String.format(
+                        "Nu s-a găsit nicio activitate Strava de tip %s cu minim %.1f km.", sport, requiredKm);
+            } else if (tElev > 0) {
+                msg = String.format(
+                        "Nu s-a găsit nicio activitate Strava de tip %s cu minim %.0f m elevație.", sport, tElev);
+            } else {
+                msg = String.format(
+                        "Nu s-a găsit nicio activitate Strava de tip %s pentru confirmare.", sport);
+            }
             return new StravaChallengeVerification(true, false, msg, List.of(), requiredKm);
         }
 
-        String msg = String.format("✓ Găsit %d activit%s Strava care îndeplinesc cerința de %.1f km.",
-                matching.size(), matching.size() == 1 ? "ate" : "ăți", requiredKm);
+        String criteriu;
+        if (tDist > 0) {
+            criteriu = String.format("%.1f km", requiredKm);
+        } else if (tElev > 0) {
+            criteriu = String.format("%.0f m elevație", tElev);
+        } else {
+            criteriu = "participare";
+        }
+        String msg = String.format("✓ Găsit %d activit%s Strava care confirmă (%s).",
+                matching.size(), matching.size() == 1 ? "ate" : "ăți", criteriu);
         return new StravaChallengeVerification(true, true, msg, matching, requiredKm);
     }
 
-    private String mapActivityType(String neverestType) {
+    /**
+     * Sportul activității Strava trebuie să corespundă tipului challenge-ului,
+     * în cadrul grupului său de echivalență:
+     *   - RUNNING / MOUNTAIN → grup anduranță pe jos (run, trail, hike, walk) → running ≈ hike
+     *   - PADEL → doar sporturi cu rachetă (padel, tenis); NU fotbal/alergare
+     * Se verifică atât tipul Strava cât și numele activității (pentru cazurile în
+     * care Strava loghează ca „Workout" dar utilizatorul scrie „Padel" în nume).
+     */
+    private boolean sportMatches(StravaActivitySummary a, String neverestType) {
+        String type = (a.type() == null ? "" : a.type()).toLowerCase();
+        String name = (a.name() == null ? "" : a.name()).toLowerCase();
         return switch (neverestType.toUpperCase()) {
-            case "RUNNING" -> "Run";
-            case "MOUNTAIN" -> "Hike";
-            case "PADEL" -> "Workout";
-            default -> "Run";
+            case "RUNNING", "MOUNTAIN" -> containsAny(type, "run", "jog", "hike", "walk", "trail",
+                    "alpine", "snowshoe")
+                    || containsAny(name, "alergare", "run", "hike", "drumet", "drumeț", "munte", "trail");
+            case "PADEL" -> containsAny(type, "padel", "tennis", "racquet", "racket", "squash")
+                    || containsAny(name, "padel", "tenis", "tennis", "squash");
+            default -> type.contains(neverestType.toLowerCase());
         };
     }
 
-    private boolean activityTypeMatches(String stravaType, String expected) {
-        if (stravaType == null) return false;
-        String s = stravaType.toLowerCase();
-        return switch (expected.toLowerCase()) {
-            case "run" -> s.contains("run") || s.contains("jog");
-            case "hike" -> s.contains("hike") || s.contains("walk") || s.contains("trail");
-            case "workout" -> true; // accept all
-            default -> true;
-        };
+    private boolean containsAny(String haystack, String... needles) {
+        for (String n : needles) {
+            if (haystack.contains(n)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Transactional

@@ -18,6 +18,10 @@ public record ChallengeResponse(
         int pointsReward,
         Double targetValue,
         String targetUnit,
-        boolean completed
+        boolean completed,
+        String ownerUserId,
+        String rewardKind,
+        String rewardLabel,
+        String brand
 ) {
 }

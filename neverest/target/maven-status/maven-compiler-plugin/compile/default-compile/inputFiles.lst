@@ -9,6 +9,9 @@ A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CheckInResponse.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreateChallengeRequest.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreateEventRequest.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreateOfferRequest.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreatePartnerChallengeRequest.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreatePartnerRequest.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreateRewardRequest.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\CreateUserRequest.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\EventCreatedResponse.java
@@ -17,9 +20,11 @@ A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\LoginRequest.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\LoginResponse.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\MeResponse.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\OfferResponse.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\RedeemRewardRequest.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\RegisterRequest.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\ReviewChallengeSubmissionRequest.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\RewardCategoryResponse.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\RewardRedemptionResponse.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\RewardResponse.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\SubmitChallengeRequest.java
@@ -28,6 +33,8 @@ A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\dto\UserResponse.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\EventController.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\LeaderboardController.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\PartnerController.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\RewardCategoryController.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\RewardController.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\StravaController.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\api\UserController.java
@@ -67,6 +74,8 @@ A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\per
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\ChallengeSubmissionEntity.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\EventCheckInEntity.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\EventEntity.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\PartnerOfferEntity.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\RewardCategoryEntity.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\RewardEntity.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\RewardRedemptionEntity.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\entity\StravaTokenEntity.java
@@ -77,9 +86,12 @@ A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\per
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\ChallengeSubmissionRepository.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\EventCheckInRepository.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\EventRepository.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\PartnerOfferRepository.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\RewardCategoryRepository.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\RewardRedemptionRepository.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\RewardRepository.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\StravaTokenRepository.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\persistence\repository\UserRepository.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\service\LocalAuthService.java
 A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\service\NeverestCoreService.java
+A:\Neverest\backend\neverest-backend\neverest\src\main\java\com\app\neverest\service\PartnerService.java

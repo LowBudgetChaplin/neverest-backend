@@ -10,4 +10,7 @@ public interface RewardRedemptionRepository extends JpaRepository<RewardRedempti
     List<RewardRedemptionEntity> findAllByOrderByRedeemedAtDesc();
 
     List<RewardRedemptionEntity> findByUserIdOrderByRedeemedAtDesc(UUID userId);
+
+    java.util.Optional<RewardRedemptionEntity>
+        findFirstByRewardIdAndUserIdOrderByRedeemedAtDesc(UUID rewardId, UUID userId);
 }

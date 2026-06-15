@@ -54,6 +54,19 @@ public class ChallengeEntity {
     @Column(name = "target_unit", length = 64)
     private String targetUnit;
 
+    // Partner-owned challenges: owner = partner user; reward is a benefit, not points.
+    @Column(name = "owner_user_id")
+    private UUID ownerUserId;
+
+    @Column(name = "reward_kind", length = 32)
+    private String rewardKind; // POINTS / DISCOUNT / FREE_ITEM / SERVICE
+
+    @Column(name = "reward_label", length = 200)
+    private String rewardLabel;
+
+    @Column(name = "brand", length = 120)
+    private String brand;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -136,4 +149,20 @@ public class ChallengeEntity {
     public String getTargetUnit() {
         return targetUnit;
     }
+
+    public UUID getOwnerUserId() { return ownerUserId; }
+    public void setOwnerUserId(UUID ownerUserId) { this.ownerUserId = ownerUserId; }
+    public String getRewardKind() { return rewardKind; }
+    public void setRewardKind(String rewardKind) { this.rewardKind = rewardKind; }
+    public String getRewardLabel() { return rewardLabel; }
+    public void setRewardLabel(String rewardLabel) { this.rewardLabel = rewardLabel; }
+    public String getBrand() { return brand; }
+    public void setBrand(String brand) { this.brand = brand; }
+
+    // Setters used when a partner edits their own challenge.
+    public void setTitle(String title) { this.title = title; }
+    public void setDescription(String description) { this.description = description; }
+    public void setActivityType(ActivityType activityType) { this.activityType = activityType; }
+    public void setStartsAt(LocalDateTime startsAt) { this.startsAt = startsAt; }
+    public void setEndsAt(LocalDateTime endsAt) { this.endsAt = endsAt; }
 }

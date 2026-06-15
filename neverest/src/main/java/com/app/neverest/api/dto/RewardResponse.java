@@ -11,6 +11,11 @@ public record RewardResponse(
         Integer stock,
         boolean active,
         String address,
-        String imageB64
+        String imageB64,
+        String category,
+        Integer rotationDays,
+        String couponStatus,
+        String couponCode,
+        java.time.LocalDateTime availableAgainAt
 ) {
 }

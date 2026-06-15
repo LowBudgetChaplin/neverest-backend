@@ -45,6 +45,12 @@ public class RewardEntity {
     @Column(name = "image_b64", columnDefinition = "MEDIUMTEXT")
     private String imageB64;
 
+    @Column(name = "category", length = 40)
+    private String category;
+
+    @Column(name = "rotation_days")
+    private Integer rotationDays;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -130,6 +136,22 @@ public class RewardEntity {
 
     public void setImageB64(String imageB64) {
         this.imageB64 = imageB64;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public Integer getRotationDays() {
+        return rotationDays;
+    }
+
+    public void setRotationDays(Integer rotationDays) {
+        this.rotationDays = rotationDays;
     }
 
     public void setTitle(String title) {

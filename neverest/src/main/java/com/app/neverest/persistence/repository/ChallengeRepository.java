@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ChallengeRepository extends JpaRepository<ChallengeEntity, UUID> {
 
     List<ChallengeEntity> findAllByOrderByStartsAtAsc();
+
+    List<ChallengeEntity> findByOwnerUserIdOrderByCreatedAtDesc(UUID ownerUserId);
 }

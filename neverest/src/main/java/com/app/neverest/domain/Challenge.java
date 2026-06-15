@@ -16,6 +16,10 @@ public class Challenge {
     private final int pointsReward;
     private final Double targetValue;
     private final String targetUnit;
+    private UUID ownerUserId;
+    private String rewardKind;
+    private String rewardLabel;
+    private String brand;
 
     public Challenge(
             UUID id,
@@ -86,4 +90,13 @@ public class Challenge {
     public String targetUnit() {
         return targetUnit;
     }
+
+    public UUID ownerUserId() { return ownerUserId; }
+    public void setOwnerUserId(UUID ownerUserId) { this.ownerUserId = ownerUserId; }
+    public String rewardKind() { return rewardKind; }
+    public void setRewardKind(String rewardKind) { this.rewardKind = rewardKind; }
+    public String rewardLabel() { return rewardLabel; }
+    public void setRewardLabel(String rewardLabel) { this.rewardLabel = rewardLabel; }
+    public String brand() { return brand; }
+    public void setBrand(String brand) { this.brand = brand; }
 }

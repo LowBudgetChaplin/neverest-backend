@@ -140,7 +140,7 @@ public class NeverestCoreService {
         if (startsAt == null) {
             throw new BadRequestException("startsAt is required.");
         }
-        // Capacity is optional, but when present it must be a positive number.
+
         if (capacity != null && capacity <= 0) {
             throw new BadRequestException("capacity must be a positive number when provided.");
         }
@@ -196,7 +196,6 @@ public class NeverestCoreService {
             throw new ConflictException("User already checked in for this event.");
         }
 
-        // Optional capacity: when set, reject once all spots are taken.
         Integer capacity = event.getCapacity();
         if (capacity != null && eventCheckInRepository.countByEventId(eventId) >= capacity) {
             throw new ConflictException("EVENT_CAPACITY_EXCEEDED");
@@ -439,6 +438,18 @@ public class NeverestCoreService {
             Integer pointsCost,
             Integer stock
     ) {
+        return createReward(title, partnerName, description, pointsCost, stock, null);
+    }
+
+    @Transactional
+    public Reward createReward(
+            String title,
+            String partnerName,
+            String description,
+            Integer pointsCost,
+            Integer stock,
+            Integer rotationDays
+    ) {
         String sanitizedTitle = requireNonBlank(title, "title");
         String sanitizedPartnerName = requireNonBlank(partnerName, "partnerName");
         String sanitizedDescription = requireNonBlank(description, "description");
@@ -460,6 +471,9 @@ public class NeverestCoreService {
                 validPointsCost,
                 normalizedStock
         );
+        if (rotationDays != null && rotationDays > 0) {
+            rewardEntity.setRotationDays(rotationDays);
+        }
 
         return toDomain(rewardRepository.save(rewardEntity));
     }
@@ -545,6 +559,23 @@ public class NeverestCoreService {
 
         UserEntity user = getUserEntityByIdForUpdateOrThrow(userId);
 
+        // Rotating one-time coupon: block re-redeem while the user's coupon is
+        // still within its rotation window. After it passes, it's redeemable
+        // again and a brand-new code is issued below.
+        rewardRedemptionRepository
+                .findFirstByRewardIdAndUserIdOrderByRedeemedAtDesc(rewardId, userId)
+                .ifPresent(last -> {
+                    Integer rotation = reward.getRotationDays();
+                    if (rotation == null) {
+                        throw new ConflictException("Coupon already redeemed for this reward.");
+                    }
+                    LocalDateTime windowEnd = last.getRedeemedAt().plusDays(rotation);
+                    if (LocalDateTime.now().isBefore(windowEnd)) {
+                        throw new ConflictException(
+                                "Coupon already redeemed. Available again on " + windowEnd + ".");
+                    }
+                });
+
         boolean stockConsumed = reward.consumeOneStock();
         if (!stockConsumed) {
             throw new ConflictException("Reward is out of stock.");
@@ -568,6 +599,20 @@ public class NeverestCoreService {
         );
 
         return toDomain(savedRedemption);
+    }
+
+    /** Latest redemption per reward for a user (used for per-user coupon status). */
+    @Transactional(readOnly = true)
+    public java.util.Map<UUID, RewardRedemption> getLatestRedemptionsByReward(UUID userId) {
+        if (userId == null) {
+            return java.util.Map.of();
+        }
+        java.util.Map<UUID, RewardRedemption> map = new java.util.HashMap<>();
+        for (RewardRedemptionEntity r :
+                rewardRedemptionRepository.findByUserIdOrderByRedeemedAtDesc(userId)) {
+            map.putIfAbsent(r.getRewardId(), toDomain(r)); // first = most recent
+        }
+        return map;
     }
 
     @Transactional(readOnly = true)
@@ -846,7 +891,7 @@ public class NeverestCoreService {
     }
 
     private Challenge toDomain(ChallengeEntity challenge) {
-        return new Challenge(
+        Challenge domain = new Challenge(
                 challenge.getId(),
                 challenge.getTitle(),
                 challenge.getDescription(),
@@ -859,6 +904,11 @@ public class NeverestCoreService {
                 challenge.getTargetValue(),
                 challenge.getTargetUnit()
         );
+        domain.setOwnerUserId(challenge.getOwnerUserId());
+        domain.setRewardKind(challenge.getRewardKind());
+        domain.setRewardLabel(challenge.getRewardLabel());
+        domain.setBrand(challenge.getBrand());
+        return domain;
     }
 
     private ChallengeSubmission toDomain(ChallengeSubmissionEntity submission) {
@@ -877,7 +927,7 @@ public class NeverestCoreService {
     }
 
     private Reward toDomain(RewardEntity reward) {
-        return new Reward(
+        Reward domain = new Reward(
                 reward.getId(),
                 reward.getTitle(),
                 reward.getPartnerName(),
@@ -888,6 +938,9 @@ public class NeverestCoreService {
                 reward.getAddress(),
                 reward.getImageB64()
         );
+        domain.setCategory(reward.getCategory());
+        domain.setRotationDays(reward.getRotationDays());
+        return domain;
     }
 
     private RewardRedemption toDomain(RewardRedemptionEntity redemption) {

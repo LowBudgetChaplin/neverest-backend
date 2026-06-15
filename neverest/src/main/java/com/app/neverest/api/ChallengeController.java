@@ -232,7 +232,11 @@ public class ChallengeController {
                 challenge.pointsReward(),
                 challenge.targetValue(),
                 challenge.targetUnit(),
-                completed
+                completed,
+                challenge.ownerUserId() == null ? null : challenge.ownerUserId().toString(),
+                challenge.rewardKind(),
+                challenge.rewardLabel(),
+                challenge.brand()
         );
     }
 

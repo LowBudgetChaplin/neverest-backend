@@ -13,6 +13,8 @@ public class Reward {
     private final String imageB64;
     private Integer stock;
     private boolean active;
+    private String category;
+    private Integer rotationDays;
 
     public Reward(
             UUID id,
@@ -106,6 +108,22 @@ public class Reward {
 
     public String imageB64() {
         return imageB64;
+    }
+
+    public String category() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public Integer rotationDays() {
+        return rotationDays;
+    }
+
+    public void setRotationDays(Integer rotationDays) {
+        this.rotationDays = rotationDays;
     }
 
     public synchronized boolean consumeOneStock() {

@@ -50,7 +50,8 @@ public class RewardController {
                 request.partnerName(),
                 request.description(),
                 request.pointsCost(),
-                request.stock()
+                request.stock(),
+                request.rotationDays()
         );
 
         auditLogService.log(
@@ -103,10 +104,16 @@ public class RewardController {
     }
 
     @GetMapping
-    public List<RewardResponse> getRewards(@RequestParam(required = false) Boolean includeInactive) {
+    public List<RewardResponse> getRewards(
+            @RequestParam(required = false) Boolean includeInactive,
+            Authentication authentication
+    ) {
+        UUID userId = coreService.findUserIdByAuthSubjectOrNull(
+                AuthUtils.subjectOrNull(authentication));
+        var latest = coreService.getLatestRedemptionsByReward(userId);
         return coreService.getRewards(includeInactive)
                 .stream()
-                .map(this::toResponse)
+                .map(reward -> toResponse(reward, latest.get(reward.id())))
                 .toList();
     }
 
@@ -184,6 +191,30 @@ public class RewardController {
     }
 
     private RewardResponse toResponse(Reward reward) {
+        return toResponse(reward, null);
+    }
+
+    private RewardResponse toResponse(Reward reward, RewardRedemption userRedemption) {
+        // Per-user coupon status (rotating one-time coupons).
+        String couponStatus = "AVAILABLE";
+        String couponCode = null;
+        java.time.LocalDateTime availableAgainAt = null;
+        if (userRedemption != null) {
+            final Integer rotation = reward.rotationDays();
+            if (rotation == null) {
+                couponStatus = "USED";
+                couponCode = userRedemption.redemptionCode();
+            } else {
+                java.time.LocalDateTime windowEnd =
+                        userRedemption.redeemedAt().plusDays(rotation);
+                if (java.time.LocalDateTime.now().isBefore(windowEnd)) {
+                    couponStatus = "USED";
+                    couponCode = userRedemption.redemptionCode();
+                    availableAgainAt = windowEnd;
+                }
+                // else: window passed → AVAILABLE again (new code on next redeem)
+            }
+        }
         return new RewardResponse(
                 reward.id(),
                 reward.title(),
@@ -193,7 +224,12 @@ public class RewardController {
                 reward.stock(),
                 reward.active(),
                 reward.address(),
-                reward.imageB64()
+                reward.imageB64(),
+                reward.category(),
+                reward.rotationDays(),
+                couponStatus,
+                couponCode,
+                availableAgainAt
         );
     }
 
