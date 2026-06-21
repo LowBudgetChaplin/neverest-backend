@@ -14,6 +14,7 @@ public record EventResponse(
         int pointsReward,
         Integer capacity,
         int attendeeCount,
+        int participantCount,
         String description,
         EventRecurrence recurrence,
         String routeMapUrl,

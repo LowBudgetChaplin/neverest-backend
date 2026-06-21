@@ -17,6 +17,7 @@ import com.app.neverest.persistence.entity.ChallengeEntity;
 import com.app.neverest.persistence.entity.ChallengeSubmissionEntity;
 import com.app.neverest.persistence.entity.EventCheckInEntity;
 import com.app.neverest.persistence.entity.EventEntity;
+import com.app.neverest.persistence.entity.EventParticipantEntity;
 import com.app.neverest.persistence.entity.RewardEntity;
 import com.app.neverest.persistence.entity.RewardRedemptionEntity;
 import com.app.neverest.persistence.entity.UserEntity;
@@ -43,6 +44,7 @@ public class NeverestCoreService {
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final EventCheckInRepository eventCheckInRepository;
+    private final com.app.neverest.persistence.repository.EventParticipantRepository eventParticipantRepository;
     private final ChallengeRepository challengeRepository;
     private final ChallengeSubmissionRepository challengeSubmissionRepository;
     private final RewardRepository rewardRepository;
@@ -54,6 +56,7 @@ public class NeverestCoreService {
             UserRepository userRepository,
             EventRepository eventRepository,
             EventCheckInRepository eventCheckInRepository,
+            com.app.neverest.persistence.repository.EventParticipantRepository eventParticipantRepository,
             ChallengeRepository challengeRepository,
             ChallengeSubmissionRepository challengeSubmissionRepository,
             RewardRepository rewardRepository,
@@ -64,6 +67,7 @@ public class NeverestCoreService {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.eventCheckInRepository = eventCheckInRepository;
+        this.eventParticipantRepository = eventParticipantRepository;
         this.challengeRepository = challengeRepository;
         this.challengeSubmissionRepository = challengeSubmissionRepository;
         this.rewardRepository = rewardRepository;
@@ -254,8 +258,66 @@ public class NeverestCoreService {
         }
         EventEntity event = getEventEntityByIdOrThrow(eventId);
         eventCheckInRepository.deleteByEventId(eventId);
+        eventParticipantRepository.deleteByEventId(eventId);
         announcementTaskRepository.deleteByEventId(eventId);
         eventRepository.delete(event);
+    }
+
+    @Transactional
+    public List<EventParticipant> joinEvent(UUID eventId, UUID userId) {
+        if (eventId == null) {
+            throw new BadRequestException("eventId is required.");
+        }
+        if (userId == null) {
+            throw new BadRequestException("userId is required.");
+        }
+        getEventEntityByIdOrThrow(eventId);
+        getUserEntityByIdOrThrow(userId);
+        if (!eventParticipantRepository.existsByEventIdAndUserId(eventId, userId)) {
+            try {
+                eventParticipantRepository.save(new EventParticipantEntity(UUID.randomUUID(), eventId, userId));
+            } catch (DataIntegrityViolationException ignored) {
+                // Already joined in a concurrent request; treat as success.
+            }
+        }
+        return listEventParticipants(eventId);
+    }
+
+    @Transactional
+    public List<EventParticipant> leaveEvent(UUID eventId, UUID userId) {
+        if (eventId == null) {
+            throw new BadRequestException("eventId is required.");
+        }
+        if (userId == null) {
+            throw new BadRequestException("userId is required.");
+        }
+        getEventEntityByIdOrThrow(eventId);
+        eventParticipantRepository.deleteByEventIdAndUserId(eventId, userId);
+        return listEventParticipants(eventId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventParticipant> listEventParticipants(UUID eventId) {
+        if (eventId == null) {
+            throw new BadRequestException("eventId is required.");
+        }
+        return eventParticipantRepository.findByEventIdOrderByJoinedAtAsc(eventId)
+                .stream()
+                .map(participant -> {
+                    UserEntity user = userRepository.findById(participant.getUserId()).orElse(null);
+                    String name = user != null ? user.getDisplayName() : "—";
+                    String avatar = user != null ? user.getAvatarB64() : null;
+                    return new EventParticipant(participant.getUserId(), name, avatar);
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isEventParticipant(UUID eventId, UUID userId) {
+        if (eventId == null || userId == null) {
+            return false;
+        }
+        return eventParticipantRepository.existsByEventIdAndUserId(eventId, userId);
     }
 
     @Transactional
@@ -269,6 +331,10 @@ public class NeverestCoreService {
         UserEntity userByQr = userRepository.findByQrCode(sanitizedUserQrCode)
                 .orElseThrow(() -> new NotFoundException("User for QR code not found."));
         UserEntity user = getUserEntityByIdForUpdateOrThrow(userByQr.getId());
+
+        if (!eventParticipantRepository.existsByEventIdAndUserId(eventId, user.getId())) {
+            throw new ConflictException("EVENT_NOT_JOINED");
+        }
 
         if (eventCheckInRepository.existsByEventIdAndUserId(eventId, user.getId())) {
             throw new ConflictException("User already checked in for this event.");
@@ -869,7 +935,7 @@ public class NeverestCoreService {
                                 .thenComparing(UserEntity::getDisplayName, String.CASE_INSENSITIVE_ORDER)
                 )
                 .limit(normalizedLimit)
-                .map(user -> new LeaderboardEntry(user.getId(), user.getDisplayName(), user.getTotalPoints()))
+                .map(user -> new LeaderboardEntry(user.getId(), user.getDisplayName(), user.getAvatarB64(), user.getTotalPoints()))
                 .toList();
     }
 
@@ -893,6 +959,7 @@ public class NeverestCoreService {
                         user -> new LeaderboardEntry(
                                 user.getId(),
                                 user.getDisplayName(),
+                                user.getAvatarB64(),
                                 user.pointsFor(activityType)
                         )
                 )
@@ -1065,6 +1132,7 @@ public class NeverestCoreService {
 
     private Event toDomain(EventEntity event) {
         int attendeeCount = (int) eventCheckInRepository.countByEventId(event.getId());
+        int participantCount = (int) eventParticipantRepository.countByEventId(event.getId());
         return new Event(
                 event.getId(),
                 event.getTitle(),
@@ -1074,6 +1142,7 @@ public class NeverestCoreService {
                 event.getPointsReward(),
                 event.getCapacity(),
                 attendeeCount,
+                participantCount,
                 event.getDescription(),
                 event.getRecurrence(),
                 event.getRouteMapUrl(),
@@ -1163,6 +1232,7 @@ public class NeverestCoreService {
     public record LeaderboardEntry(
             UUID userId,
             String displayName,
+            String avatarB64,
             int points
     ) {
     }
@@ -1174,6 +1244,13 @@ public class NeverestCoreService {
             String userName,
             String code,
             LocalDateTime consumedAt
+    ) {
+    }
+
+    public record EventParticipant(
+            UUID userId,
+            String name,
+            String avatarB64
     ) {
     }
 }

@@ -43,6 +43,7 @@ public class LeaderboardController {
         return new LeaderboardEntryResponse(
                 leaderboardEntry.userId(),
                 leaderboardEntry.displayName(),
+                leaderboardEntry.avatarB64(),
                 leaderboardEntry.points()
         );
     }

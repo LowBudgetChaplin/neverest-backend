@@ -5,6 +5,8 @@ import com.app.neverest.api.dto.CheckInRequest;
 import com.app.neverest.api.dto.CheckInResponse;
 import com.app.neverest.api.dto.CreateEventRequest;
 import com.app.neverest.api.dto.EventCreatedResponse;
+import com.app.neverest.api.dto.EventParticipantResponse;
+import com.app.neverest.api.dto.EventParticipantsResponse;
 import com.app.neverest.api.dto.EventResponse;
 import com.app.neverest.api.dto.UpdateEventRequest;
 import com.app.neverest.audit.AuditLogService;
@@ -192,6 +194,49 @@ public class EventController {
         );
     }
 
+    @GetMapping("/{eventId}/participants")
+    public EventParticipantsResponse getParticipants(
+            @PathVariable UUID eventId,
+            Authentication authentication
+    ) {
+        UUID currentUserId = coreService.resolveUserIdForAction(AuthUtils.requireSubject(authentication), null);
+        return toParticipantsResponse(coreService.listEventParticipants(eventId), currentUserId);
+    }
+
+    @PostMapping("/{eventId}/participants/me")
+    public EventParticipantsResponse joinEvent(
+            @PathVariable UUID eventId,
+            Authentication authentication
+    ) {
+        UUID currentUserId = coreService.resolveUserIdForAction(AuthUtils.requireSubject(authentication), null);
+        List<NeverestCoreService.EventParticipant> participants = coreService.joinEvent(eventId, currentUserId);
+        auditLogService.log(
+                "EVENT_JOINED",
+                AuthUtils.actor(authentication),
+                true,
+                "User joined event.",
+                Map.of("eventId", eventId.toString(), "userId", currentUserId.toString())
+        );
+        return toParticipantsResponse(participants, currentUserId);
+    }
+
+    @DeleteMapping("/{eventId}/participants/me")
+    public EventParticipantsResponse leaveEvent(
+            @PathVariable UUID eventId,
+            Authentication authentication
+    ) {
+        UUID currentUserId = coreService.resolveUserIdForAction(AuthUtils.requireSubject(authentication), null);
+        List<NeverestCoreService.EventParticipant> participants = coreService.leaveEvent(eventId, currentUserId);
+        auditLogService.log(
+                "EVENT_LEFT",
+                AuthUtils.actor(authentication),
+                true,
+                "User left event.",
+                Map.of("eventId", eventId.toString(), "userId", currentUserId.toString())
+        );
+        return toParticipantsResponse(participants, currentUserId);
+    }
+
     @PostMapping("/{eventId}/announcements/retry")
     public List<AnnouncementDispatchResponse> retryAnnouncements(
             @PathVariable UUID eventId,
@@ -228,12 +273,24 @@ public class EventController {
                 event.pointsReward(),
                 event.capacity(),
                 event.attendeeCount(),
+                event.participantCount(),
                 event.description(),
                 event.recurrence(),
                 event.routeMapUrl(),
                 event.stravaClubUrl(),
                 event.whatsappGroupUrl()
         );
+    }
+
+    private EventParticipantsResponse toParticipantsResponse(
+            List<NeverestCoreService.EventParticipant> participants,
+            UUID currentUserId
+    ) {
+        boolean going = participants.stream().anyMatch(p -> p.userId().equals(currentUserId));
+        List<EventParticipantResponse> mapped = participants.stream()
+                .map(p -> new EventParticipantResponse(p.userId(), p.name(), p.avatarB64()))
+                .toList();
+        return new EventParticipantsResponse(going, mapped.size(), mapped);
     }
 
     private AnnouncementDispatchResponse toAnnouncementResponse(AnnouncementDispatchResult result) {
