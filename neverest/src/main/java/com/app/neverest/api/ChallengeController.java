@@ -5,6 +5,7 @@ import com.app.neverest.api.dto.ChallengeSubmissionResponse;
 import com.app.neverest.api.dto.CreateChallengeRequest;
 import com.app.neverest.api.dto.ReviewChallengeSubmissionRequest;
 import com.app.neverest.api.dto.SubmitChallengeRequest;
+import com.app.neverest.api.dto.UpdateChallengeRequest;
 import com.app.neverest.audit.AuditLogService;
 import com.app.neverest.common.AuthUtils;
 import com.app.neverest.common.BadRequestException;
@@ -16,7 +17,9 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -80,6 +83,49 @@ public class ChallengeController {
                 .stream()
                 .map(challenge -> toResponse(challenge, completedIds.contains(challenge.id())))
                 .toList();
+    }
+
+    @PatchMapping("/{challengeId}")
+    public ChallengeResponse updateChallenge(
+            @PathVariable UUID challengeId,
+            @RequestBody UpdateChallengeRequest request,
+            Authentication authentication
+    ) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required.");
+        }
+        Challenge challenge = coreService.updateChallenge(
+                challengeId,
+                request.title(),
+                request.description(),
+                request.activityType(),
+                request.pointsReward(),
+                request.targetValue(),
+                request.targetUnit(),
+                request.startsAt(),
+                request.endsAt()
+        );
+        auditLogService.log(
+                "CHALLENGE_UPDATED",
+                AuthUtils.actor(authentication),
+                true,
+                "Challenge updated.",
+                Map.of("challengeId", challengeId.toString())
+        );
+        return toResponse(challenge);
+    }
+
+    @DeleteMapping("/{challengeId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteChallenge(@PathVariable UUID challengeId, Authentication authentication) {
+        coreService.deleteChallenge(challengeId);
+        auditLogService.log(
+                "CHALLENGE_DELETED",
+                AuthUtils.actor(authentication),
+                true,
+                "Challenge deleted.",
+                Map.of("challengeId", challengeId.toString())
+        );
     }
 
     @PostMapping("/{challengeId}/submissions")

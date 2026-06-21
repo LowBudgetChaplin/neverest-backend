@@ -5,6 +5,8 @@ import com.app.neverest.api.dto.RedeemRewardRequest;
 import com.app.neverest.api.dto.RewardRedemptionResponse;
 import com.app.neverest.api.dto.RewardResponse;
 import com.app.neverest.api.dto.UpdateRewardRequest;
+import com.app.neverest.api.dto.ValidateRedemptionRequest;
+import com.app.neverest.api.dto.ValidateRedemptionResponse;
 import com.app.neverest.audit.AuditLogService;
 import com.app.neverest.common.AuthUtils;
 import com.app.neverest.common.BadRequestException;
@@ -172,6 +174,41 @@ public class RewardController {
         return toResponse(redemption);
     }
 
+    @PostMapping("/redemptions/validate")
+    public ValidateRedemptionResponse validateRedemption(
+            @RequestBody ValidateRedemptionRequest request,
+            Authentication authentication
+    ) {
+        if (request == null || request.code() == null || request.code().isBlank()) {
+            throw new BadRequestException("code is required.");
+        }
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        UUID scannerUserId = isAdmin
+                ? null
+                : coreService.resolveUserIdForAction(AuthUtils.requireSubject(authentication), null);
+
+        NeverestCoreService.RedemptionValidationResult result =
+                coreService.validateRedemptionCode(request.code(), scannerUserId, isAdmin);
+
+        auditLogService.log(
+                "REWARD_CODE_VALIDATED",
+                AuthUtils.actor(authentication),
+                result.valid(),
+                result.status(),
+                Map.of("code", request.code().trim(), "status", result.status())
+        );
+
+        return new ValidateRedemptionResponse(
+                result.valid(),
+                result.status(),
+                result.rewardTitle(),
+                result.userName(),
+                result.code(),
+                result.consumedAt()
+        );
+    }
+
     @GetMapping("/redemptions")
     public List<RewardRedemptionResponse> getRedemptions(@RequestParam(required = false) UUID userId) {
         return coreService.getRewardRedemptions(userId)
@@ -195,7 +232,6 @@ public class RewardController {
     }
 
     private RewardResponse toResponse(Reward reward, RewardRedemption userRedemption) {
-        // Per-user coupon status (rotating one-time coupons).
         String couponStatus = "AVAILABLE";
         String couponCode = null;
         java.time.LocalDateTime availableAgainAt = null;

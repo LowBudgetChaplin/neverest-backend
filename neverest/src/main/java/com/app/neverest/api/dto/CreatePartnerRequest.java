@@ -4,6 +4,7 @@ public record CreatePartnerRequest(
         String email,
         String password,
         String displayName,
-        String brand
+        String brand,
+        String phoneNumber
 ) {
 }

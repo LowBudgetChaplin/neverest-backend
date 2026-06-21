@@ -19,6 +19,10 @@ public interface AnnouncementTaskRepository extends JpaRepository<AnnouncementTa
 
     List<AnnouncementTaskEntity> findByEventIdOrderByChannelAsc(UUID eventId);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("delete from AnnouncementTaskEntity t where t.eventId = :eventId")
+    void deleteByEventId(@Param("eventId") UUID eventId);
+
     @Query(
             "select t from AnnouncementTaskEntity t "
                     + "where t.status in :statuses and t.nextAttemptAt <= :now "

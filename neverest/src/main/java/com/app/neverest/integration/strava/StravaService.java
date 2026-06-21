@@ -69,7 +69,6 @@ public class StravaService {
 
     @Transactional
     public StravaConnectionStatus exchangeCodeAndStore(String code, String state) throws IOException, InterruptedException {
-        // Exchange code for tokens
         String body = "client_id=" + clientId
                 + "&client_secret=" + clientSecret
                 + "&code=" + code
@@ -109,7 +108,6 @@ public class StravaService {
         }
         UUID userId = userOpt.get().getId();
 
-        // Upsert token
         Optional<StravaTokenEntity> existing = stravaTokenRepository.findByUserId(userId);
         if (existing.isPresent()) {
             existing.get().updateTokens(accessToken, refreshToken, expiresAt);
@@ -158,6 +156,7 @@ public class StravaService {
                     node.path("id").asLong(),
                     node.path("name").asText("Activity"),
                     node.path("type").asText("Run"),
+                    node.path("sport_type").asText(node.path("type").asText("Run")),
                     node.path("distance").asDouble(0),
                     node.path("moving_time").asInt(0),
                     node.path("elapsed_time").asInt(0),
@@ -176,25 +175,18 @@ public class StravaService {
                                                         NeverestCoreService coreService)
             throws IOException, InterruptedException {
 
-        // Check Strava connection
         Optional<StravaTokenEntity> tokenOpt = stravaTokenRepository.findByUserId(userId);
         if (tokenOpt.isEmpty()) {
             return new StravaChallengeVerification(false, false,
                     "Strava nu este conectat. Conectează-ți contul Strava mai întâi.", List.of(), 0);
         }
 
-        // Get challenge details
         Challenge challenge = coreService.getChallengeById(challengeId);
         if (challenge == null) {
             return new StravaChallengeVerification(true, false,
                     "Challenge-ul nu a fost găsit.", List.of(), 0);
         }
 
-        // ── Determinăm criteriile țintă din challenge ────────────────────────────
-        // Un challenge se consideră îndeplinit dacă o activitate Strava satisface
-        // ORICARE dintre: distanță (km), elevație (m) sau numele/tipul activității.
-        // Astfel poți echivala running 7km cu un hike de 7km, sau valida un
-        // "turneu de padel" cu o activitate de fotbal/alergare (participare).
         double targetValue = challenge.targetValue() != null ? challenge.targetValue() : 0;
         String unit = challenge.targetUnit() == null ? "" : challenge.targetUnit().toLowerCase();
         boolean isElevationTarget = unit.contains("elev") || unit.contains("d+")
@@ -209,9 +201,9 @@ public class StravaService {
             } else if (isElevationTarget) {
                 targetElevationMeters = targetValue;
             } else if (unit.contains("m")) {
-                targetDistanceMeters = targetValue; // metri distanță
+                targetDistanceMeters = targetValue;
             } else {
-                targetDistanceMeters = targetValue * 1000; // implicit km
+                targetDistanceMeters = targetValue * 1000;
             }
         }
         final double tDist = targetDistanceMeters;
@@ -222,16 +214,13 @@ public class StravaService {
 
         List<StravaActivitySummary> activities = getRecentActivities(userId, 20);
 
-        // Sportul TREBUIE să corespundă (în grupul lui de echivalență), apoi se
-        // verifică ținta numerică (dacă există). Padel = doar padel, nu fotbal.
-        // Running ≈ hike (același grup de anduranță pe jos).
         List<StravaActivitySummary> matching = activities.stream()
                 .filter(a -> {
                     if (!sportMatches(a, challenge.activityType().name())) {
-                        return false; // sport greșit → nu validează
+                        return false;
                     }
                     if (!hasNumericTarget) {
-                        return true; // sport corect + fără țintă numerică = participare
+                        return true;
                     }
                     boolean distOk = tDist > 0 && a.distanceMeters() >= tDist * 0.95;
                     boolean elevOk = tElev > 0 && a.totalElevationGain() >= tElev * 0.95;
@@ -268,25 +257,28 @@ public class StravaService {
         return new StravaChallengeVerification(true, true, msg, matching, requiredKm);
     }
 
-    /**
-     * Sportul activității Strava trebuie să corespundă tipului challenge-ului,
-     * în cadrul grupului său de echivalență:
-     *   - RUNNING / MOUNTAIN → grup anduranță pe jos (run, trail, hike, walk) → running ≈ hike
-     *   - PADEL → doar sporturi cu rachetă (padel, tenis); NU fotbal/alergare
-     * Se verifică atât tipul Strava cât și numele activității (pentru cazurile în
-     * care Strava loghează ca „Workout" dar utilizatorul scrie „Padel" în nume).
-     */
     private boolean sportMatches(StravaActivitySummary a, String neverestType) {
-        String type = (a.type() == null ? "" : a.type()).toLowerCase();
+        String sport = (a.sportType() != null && !a.sportType().isBlank() ? a.sportType() : a.type());
+        sport = sport == null ? "" : sport.toLowerCase();
         String name = (a.name() == null ? "" : a.name()).toLowerCase();
         return switch (neverestType.toUpperCase()) {
-            case "RUNNING", "MOUNTAIN" -> containsAny(type, "run", "jog", "hike", "walk", "trail",
-                    "alpine", "snowshoe")
-                    || containsAny(name, "alergare", "run", "hike", "drumet", "drumeț", "munte", "trail");
-            case "PADEL" -> containsAny(type, "padel", "tennis", "racquet", "racket", "squash")
-                    || containsAny(name, "padel", "tenis", "tennis", "squash");
-            default -> type.contains(neverestType.toLowerCase());
+            case "MOUNTAIN" -> equalsAny(sport, "hike", "trailrun")
+                    || containsAny(name, "hike", "drumet", "drumeț", "munte", "trail");
+            case "RUNNING" -> equalsAny(sport, "run", "walk")
+                    || containsAny(name, "alergare", "jogging", "plimbare", "mers pe jos");
+            case "PADEL" -> equalsAny(sport, "padel", "racquetball", "pickleball", "squash")
+                    || containsAny(name, "padel", "racquetball", "pickleball", "squash");
+            default -> sport.contains(neverestType.toLowerCase());
         };
+    }
+
+    private boolean equalsAny(String value, String... candidates) {
+        for (String c : candidates) {
+            if (value.equals(c)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean containsAny(String haystack, String... needles) {
@@ -322,7 +314,6 @@ public class StravaService {
         if (!isExpired(token)) {
             return token.getAccessToken();
         }
-        // Refresh
         String body = "client_id=" + clientId
                 + "&client_secret=" + clientSecret
                 + "&refresh_token=" + token.getRefreshToken()
@@ -354,7 +345,6 @@ public class StravaService {
             UUID userId = UUID.fromString(state);
             return userRepository.findById(userId);
         } catch (IllegalArgumentException e) {
-            // state might be email
             return userRepository.findByAuthSubjectIgnoreCase(state);
         }
     }

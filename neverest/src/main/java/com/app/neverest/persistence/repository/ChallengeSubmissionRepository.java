@@ -27,4 +27,8 @@ public interface ChallengeSubmissionRepository extends JpaRepository<ChallengeSu
             @Param("id") UUID id,
             @Param("challengeId") UUID challengeId
     );
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("delete from ChallengeSubmissionEntity s where s.challengeId = :challengeId")
+    void deleteByChallengeId(@Param("challengeId") UUID challengeId);
 }

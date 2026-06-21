@@ -2,6 +2,7 @@ package com.app.neverest.service;
 
 import com.app.neverest.api.dto.CreateOfferRequest;
 import com.app.neverest.api.dto.CreatePartnerChallengeRequest;
+import com.app.neverest.api.dto.CreateRewardRequest;
 import com.app.neverest.common.BadRequestException;
 import com.app.neverest.common.ConflictException;
 import com.app.neverest.common.NotFoundException;
@@ -10,9 +11,11 @@ import com.app.neverest.domain.ChallengeFrequency;
 import com.app.neverest.domain.ChallengeMode;
 import com.app.neverest.persistence.entity.ChallengeEntity;
 import com.app.neverest.persistence.entity.PartnerOfferEntity;
+import com.app.neverest.persistence.entity.RewardEntity;
 import com.app.neverest.persistence.entity.UserEntity;
 import com.app.neverest.persistence.repository.ChallengeRepository;
 import com.app.neverest.persistence.repository.PartnerOfferRepository;
+import com.app.neverest.persistence.repository.RewardRepository;
 import com.app.neverest.persistence.repository.UserRepository;
 import java.util.List;
 import java.util.Locale;
@@ -30,23 +33,27 @@ public class PartnerService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final ChallengeRepository challengeRepository;
+    private final RewardRepository rewardRepository;
 
     public PartnerService(
             PartnerOfferRepository offerRepository,
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            ChallengeRepository challengeRepository
+            ChallengeRepository challengeRepository,
+            RewardRepository rewardRepository
     ) {
         this.offerRepository = offerRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.challengeRepository = challengeRepository;
+        this.rewardRepository = rewardRepository;
     }
 
-    // ── Admin: create a partner account ──────────────────────────────────────
     @Transactional
-    public UserEntity createPartner(String email, String password, String displayName, String brand) {
-        String normalizedEmail = requireNonBlank(email, "email").toLowerCase(Locale.ROOT);
+    public UserEntity createPartner(String email, String password, String displayName, String brand, String phoneNumber) {
+        String normalizedEmail = com.app.neverest.common.Validators
+                .requireValidEmail(email).toLowerCase(Locale.ROOT);
+        String normalizedPhone = com.app.neverest.common.Validators.requireValidPhone(phoneNumber);
         String rawPassword = requireNonBlank(password, "password");
         if (rawPassword.length() < 6) {
             throw new BadRequestException("password must contain at least 6 characters.");
@@ -67,15 +74,14 @@ public class PartnerService {
                 passwordEncoder.encode(rawPassword),
                 "PARTNER"
         );
+        user.setPhoneNumber(normalizedPhone);
         return userRepository.save(user);
     }
 
-    // ── Offers ───────────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public List<PartnerOfferEntity> getActiveOffers() {
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         return offerRepository.findByActiveTrueOrderByCreatedAtDesc().stream()
-                // visible only inside the scheduled window [validFrom, validUntil]
                 .filter(o -> o.getValidFrom() == null || !now.isBefore(o.getValidFrom()))
                 .filter(o -> o.getValidUntil() == null || !now.isAfter(o.getValidUntil()))
                 .toList();
@@ -122,7 +128,6 @@ public class PartnerService {
         offerRepository.delete(offer);
     }
 
-    // ── Partner challenges (benefit reward, no points) ───────────────────────
     @Transactional(readOnly = true)
     public List<ChallengeEntity> getMyChallenges(String authSubject) {
         return challengeRepository.findByOwnerUserIdOrderByCreatedAtDesc(requireUserId(authSubject));
@@ -143,7 +148,7 @@ public class PartnerService {
                 ChallengeFrequency.MONTHLY,
                 request.startsAt(),
                 request.endsAt(),
-                0, // partner challenges award a benefit, not points
+                0,
                 request.targetValue(),
                 blankToNull(request.targetUnit())
         );
@@ -211,7 +216,87 @@ public class PartnerService {
                 .orElse("Partner");
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
+    @Transactional(readOnly = true)
+    public List<RewardEntity> getMyRewards(String authSubject) {
+        return rewardRepository.findByOwnerUserIdOrderByTitleAsc(requireUserId(authSubject));
+    }
+
+    @Transactional
+    public RewardEntity createReward(String authSubject, CreateRewardRequest request) {
+        UUID ownerId = requireUserId(authSubject);
+        RewardEntity reward = new RewardEntity(
+                UUID.randomUUID(),
+                requireNonBlank(request.title(), "title"),
+                requireNonBlank(request.partnerName(), "partnerName"),
+                requireNonBlank(request.description(), "description"),
+                requirePositive(request.pointsCost(), "pointsCost"),
+                normalizeStock(request.stock())
+        );
+        reward.setOwnerUserId(ownerId);
+        if (request.rotationDays() != null && request.rotationDays() > 0) {
+            reward.setRotationDays(request.rotationDays());
+        }
+        return rewardRepository.save(reward);
+    }
+
+    @Transactional
+    public RewardEntity updateReward(String authSubject, UUID rewardId, CreateRewardRequest request) {
+        RewardEntity reward = requireOwnedReward(authSubject, rewardId);
+        if (request.title() != null && !request.title().isBlank()) {
+            reward.setTitle(request.title().trim());
+        }
+        if (request.partnerName() != null && !request.partnerName().isBlank()) {
+            reward.setPartnerName(request.partnerName().trim());
+        }
+        if (request.description() != null && !request.description().isBlank()) {
+            reward.setDescription(request.description().trim());
+        }
+        if (request.pointsCost() != null) {
+            reward.setPointsCost(requirePositive(request.pointsCost(), "pointsCost"));
+        }
+        if (request.stock() != null) {
+            reward.setStock(normalizeStock(request.stock()));
+        }
+        if (request.rotationDays() != null) {
+            reward.setRotationDays(request.rotationDays() > 0 ? request.rotationDays() : null);
+        }
+        return rewardRepository.save(reward);
+    }
+
+    @Transactional
+    public void deleteReward(String authSubject, UUID rewardId) {
+        RewardEntity reward = requireOwnedReward(authSubject, rewardId);
+        reward.deactivate();
+        rewardRepository.save(reward);
+    }
+
+    private RewardEntity requireOwnedReward(String authSubject, UUID rewardId) {
+        UUID ownerId = requireUserId(authSubject);
+        RewardEntity reward = rewardRepository.findById(rewardId)
+                .orElseThrow(() -> new NotFoundException("Reward not found."));
+        if (reward.getOwnerUserId() == null || !reward.getOwnerUserId().equals(ownerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only manage your own rewards.");
+        }
+        return reward;
+    }
+
+    private int requirePositive(Integer value, String field) {
+        if (value == null || value <= 0) {
+            throw new BadRequestException(field + " must be a positive integer.");
+        }
+        return value;
+    }
+
+    private Integer normalizeStock(Integer stock) {
+        if (stock == null) {
+            return null;
+        }
+        if (stock <= 0) {
+            throw new BadRequestException("stock must be greater than 0.");
+        }
+        return stock;
+    }
+
     private void applyFields(PartnerOfferEntity offer, CreateOfferRequest request) {
         offer.setDescription(blankToNull(request.description()));
         offer.setDiscountLabel(blankToNull(request.discountLabel()));

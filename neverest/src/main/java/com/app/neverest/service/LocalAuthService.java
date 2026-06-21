@@ -82,13 +82,13 @@ public class LocalAuthService {
             String phoneNumber,
             String avatarB64
     ) {
-        String normalizedEmail = normalizeEmail(email);
+        String normalizedEmail = com.app.neverest.common.Validators
+                .requireValidEmail(email).toLowerCase(Locale.ROOT);
         String rawPassword = requireNonBlank(password, "password");
         if (rawPassword.length() < 6) {
             throw new BadRequestException("password must contain at least 6 characters.");
         }
-        // Phone number is mandatory at registration.
-        String normalizedPhone = requireNonBlank(phoneNumber, "phoneNumber");
+        String normalizedPhone = com.app.neverest.common.Validators.requireValidPhone(phoneNumber);
 
         if (userRepository.findByAuthSubjectIgnoreCase(normalizedEmail).isPresent()) {
             throw new ConflictException("An account with this email already exists.");

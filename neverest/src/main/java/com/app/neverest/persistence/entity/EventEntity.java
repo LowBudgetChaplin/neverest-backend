@@ -123,4 +123,18 @@ public class EventEntity {
     public String getRouteMapUrl() { return routeMapUrl; }
     public String getStravaClubUrl() { return stravaClubUrl; }
     public String getWhatsappGroupUrl() { return whatsappGroupUrl; }
+
+    public void setTitle(String title) { this.title = title; }
+    public void setActivityType(ActivityType activityType) { this.activityType = activityType; }
+    public void setLocation(String location) { this.location = location; }
+    public void setStartsAt(LocalDateTime startsAt) { this.startsAt = startsAt; }
+    public void setPointsReward(int pointsReward) { this.pointsReward = pointsReward; }
+    public void setCapacity(Integer capacity) { this.capacity = capacity; }
+    public void setDescription(String description) { this.description = description; }
+    public void setRecurrence(EventRecurrence recurrence) {
+        this.recurrence = recurrence != null ? recurrence : EventRecurrence.NONE;
+    }
+    public void setRouteMapUrl(String routeMapUrl) { this.routeMapUrl = routeMapUrl; }
+    public void setStravaClubUrl(String stravaClubUrl) { this.stravaClubUrl = stravaClubUrl; }
+    public void setWhatsappGroupUrl(String whatsappGroupUrl) { this.whatsappGroupUrl = whatsappGroupUrl; }
 }

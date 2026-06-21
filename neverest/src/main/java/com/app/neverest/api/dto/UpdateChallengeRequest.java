@@ -3,16 +3,14 @@ package com.app.neverest.api.dto;
 import com.app.neverest.domain.ActivityType;
 import java.time.LocalDateTime;
 
-public record CreatePartnerChallengeRequest(
+public record UpdateChallengeRequest(
         String title,
         String description,
         ActivityType activityType,
-        LocalDateTime startsAt,
-        LocalDateTime endsAt,
-        String rewardKind,
-        String rewardLabel,
-        String brand,
+        Integer pointsReward,
         Double targetValue,
-        String targetUnit
+        String targetUnit,
+        LocalDateTime startsAt,
+        LocalDateTime endsAt
 ) {
 }

@@ -34,7 +34,6 @@ public class StravaController {
         this.coreService = coreService;
     }
 
-    /** Returns the Strava OAuth URL for the current user. */
     @GetMapping("/connect-url")
     public Map<String, String> getConnectUrl(Authentication authentication) {
         String subject = AuthUtils.requireSubject(authentication);
@@ -43,7 +42,6 @@ public class StravaController {
         return Map.of("url", url);
     }
 
-    /** OAuth callback — called by Strava after user authorizes. Public endpoint. */
     @GetMapping("/callback")
     public RedirectView handleCallback(
             @RequestParam(required = false) String code,
@@ -51,19 +49,16 @@ public class StravaController {
             @RequestParam(required = false) String error
     ) {
         if (error != null || code == null) {
-            // Deep link back to app with error
             return new RedirectView("neverest://strava?status=error&reason=" + (error != null ? error : "missing_code"));
         }
         try {
             stravaService.exchangeCodeAndStore(code, state);
-            // Deep link back to app with success
             return new RedirectView("neverest://strava?status=connected");
         } catch (Exception e) {
             return new RedirectView("neverest://strava?status=error&reason=exchange_failed");
         }
     }
 
-    /** Returns current Strava connection status for authenticated user. */
     @GetMapping("/status")
     public StravaConnectionStatus getStatus(Authentication authentication) {
         String subject = AuthUtils.requireSubject(authentication);
@@ -71,7 +66,6 @@ public class StravaController {
         return stravaService.getStatus(userId);
     }
 
-    /** Returns recent Strava activities for the authenticated user. */
     @GetMapping("/activities/recent")
     public List<StravaActivitySummary> getRecentActivities(
             Authentication authentication,
@@ -87,10 +81,6 @@ public class StravaController {
         }
     }
 
-    /**
-     * Verifică dacă userul a completat un challenge pe Strava.
-     * Caută activități recente care acoperă distanța cerută.
-     */
     @GetMapping("/verify/challenge/{challengeId}")
     public StravaChallengeVerification verifyChallenge(
             @PathVariable UUID challengeId,
@@ -106,7 +96,6 @@ public class StravaController {
         }
     }
 
-    /** Disconnects Strava for the authenticated user. */
     @DeleteMapping("/disconnect")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void disconnect(Authentication authentication) {

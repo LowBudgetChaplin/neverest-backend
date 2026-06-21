@@ -51,6 +51,9 @@ public class RewardEntity {
     @Column(name = "rotation_days")
     private Integer rotationDays;
 
+    @Column(name = "owner_user_id")
+    private UUID ownerUserId;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -152,6 +155,14 @@ public class RewardEntity {
 
     public void setRotationDays(Integer rotationDays) {
         this.rotationDays = rotationDays;
+    }
+
+    public UUID getOwnerUserId() {
+        return ownerUserId;
+    }
+
+    public void setOwnerUserId(UUID ownerUserId) {
+        this.ownerUserId = ownerUserId;
     }
 
     public void setTitle(String title) {

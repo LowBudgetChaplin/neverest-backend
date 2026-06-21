@@ -13,6 +13,8 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByQrCode(String qrCode);
 
+    java.util.List<UserEntity> findByRole(String role);
+
     Optional<UserEntity> findByAuthSubject(String authSubject);
 
     @Query("select u from UserEntity u where lower(u.authSubject) = lower(:authSubject)")

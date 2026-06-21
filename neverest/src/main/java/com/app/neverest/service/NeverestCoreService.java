@@ -47,6 +47,8 @@ public class NeverestCoreService {
     private final ChallengeSubmissionRepository challengeSubmissionRepository;
     private final RewardRepository rewardRepository;
     private final RewardRedemptionRepository rewardRedemptionRepository;
+    private final NotificationService notificationService;
+    private final com.app.neverest.persistence.repository.AnnouncementTaskRepository announcementTaskRepository;
 
     public NeverestCoreService(
             UserRepository userRepository,
@@ -55,7 +57,9 @@ public class NeverestCoreService {
             ChallengeRepository challengeRepository,
             ChallengeSubmissionRepository challengeSubmissionRepository,
             RewardRepository rewardRepository,
-            RewardRedemptionRepository rewardRedemptionRepository
+            RewardRedemptionRepository rewardRedemptionRepository,
+            NotificationService notificationService,
+            com.app.neverest.persistence.repository.AnnouncementTaskRepository announcementTaskRepository
     ) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
@@ -64,6 +68,8 @@ public class NeverestCoreService {
         this.challengeSubmissionRepository = challengeSubmissionRepository;
         this.rewardRepository = rewardRepository;
         this.rewardRedemptionRepository = rewardRedemptionRepository;
+        this.notificationService = notificationService;
+        this.announcementTaskRepository = announcementTaskRepository;
     }
 
     @Transactional
@@ -178,6 +184,78 @@ public class NeverestCoreService {
                 .stream()
                 .map(this::toDomain)
                 .toList();
+    }
+
+    @Transactional
+    public Event updateEvent(
+            UUID eventId,
+            String title,
+            ActivityType activityType,
+            String location,
+            LocalDateTime startsAt,
+            Integer pointsReward,
+            Integer capacity,
+            boolean clearCapacity,
+            String description,
+            com.app.neverest.domain.EventRecurrence recurrence,
+            String routeMapUrl,
+            String stravaClubUrl,
+            String whatsappGroupUrl
+    ) {
+        if (eventId == null) {
+            throw new BadRequestException("eventId is required.");
+        }
+        EventEntity event = getEventEntityByIdOrThrow(eventId);
+        if (title != null && !title.isBlank()) {
+            event.setTitle(title.trim());
+        }
+        if (activityType != null) {
+            event.setActivityType(activityType);
+        }
+        if (location != null && !location.isBlank()) {
+            event.setLocation(location.trim());
+        }
+        if (startsAt != null) {
+            event.setStartsAt(startsAt);
+        }
+        if (pointsReward != null) {
+            event.setPointsReward(requirePositive(pointsReward, "pointsReward"));
+        }
+        if (clearCapacity) {
+            event.setCapacity(null);
+        } else if (capacity != null) {
+            if (capacity <= 0) {
+                throw new BadRequestException("capacity must be a positive number when provided.");
+            }
+            event.setCapacity(capacity);
+        }
+        if (description != null) {
+            event.setDescription(description.isBlank() ? null : description.trim());
+        }
+        if (recurrence != null) {
+            event.setRecurrence(recurrence);
+        }
+        if (routeMapUrl != null) {
+            event.setRouteMapUrl(routeMapUrl.isBlank() ? null : routeMapUrl.trim());
+        }
+        if (stravaClubUrl != null) {
+            event.setStravaClubUrl(stravaClubUrl.isBlank() ? null : stravaClubUrl.trim());
+        }
+        if (whatsappGroupUrl != null) {
+            event.setWhatsappGroupUrl(whatsappGroupUrl.isBlank() ? null : whatsappGroupUrl.trim());
+        }
+        return toDomain(eventRepository.save(event));
+    }
+
+    @Transactional
+    public void deleteEvent(UUID eventId) {
+        if (eventId == null) {
+            throw new BadRequestException("eventId is required.");
+        }
+        EventEntity event = getEventEntityByIdOrThrow(eventId);
+        eventCheckInRepository.deleteByEventId(eventId);
+        announcementTaskRepository.deleteByEventId(eventId);
+        eventRepository.delete(event);
     }
 
     @Transactional
@@ -299,7 +377,6 @@ public class NeverestCoreService {
                 .collect(java.util.stream.Collectors.toSet());
     }
 
-
     @Transactional(readOnly = true)
     public UUID findUserIdByAuthSubjectOrNull(String authSubject) {
         if (authSubject == null || authSubject.isBlank()) {
@@ -315,6 +392,60 @@ public class NeverestCoreService {
         return challengeRepository.findById(challengeId)
                 .map(this::toDomain)
                 .orElse(null);
+    }
+
+    @Transactional
+    public Challenge updateChallenge(
+            UUID challengeId,
+            String title,
+            String description,
+            ActivityType activityType,
+            Integer pointsReward,
+            Double targetValue,
+            String targetUnit,
+            LocalDateTime startsAt,
+            LocalDateTime endsAt
+    ) {
+        if (challengeId == null) {
+            throw new BadRequestException("challengeId is required.");
+        }
+        ChallengeEntity challenge = getChallengeEntityByIdOrThrow(challengeId);
+        if (title != null && !title.isBlank()) {
+            challenge.setTitle(title.trim());
+        }
+        if (description != null && !description.isBlank()) {
+            challenge.setDescription(description.trim());
+        }
+        if (activityType != null) {
+            challenge.setActivityType(activityType);
+        }
+        if (pointsReward != null) {
+            challenge.setPointsReward(requirePositive(pointsReward, "pointsReward"));
+        }
+        if (targetValue != null) {
+            challenge.setTargetValue(requirePositiveDouble(targetValue, "targetValue"));
+        }
+        if (targetUnit != null) {
+            challenge.setTargetUnit(targetUnit.isBlank() ? null : targetUnit.trim());
+        }
+        if (startsAt != null) {
+            challenge.setStartsAt(startsAt);
+        }
+        if (endsAt != null) {
+            challenge.setEndsAt(endsAt);
+        }
+        return toDomain(challengeRepository.save(challenge));
+    }
+
+    @Transactional
+    public void deleteChallenge(UUID challengeId) {
+        if (challengeId == null) {
+            throw new BadRequestException("challengeId is required.");
+        }
+        ChallengeEntity challenge = getChallengeEntityByIdOrThrow(challengeId);
+        challengeSubmissionRepository.deleteByChallengeId(challengeId);
+        notificationService.deleteForChallenge(challengeId);
+        challengeRepository.delete(challenge);
     }
 
     @Transactional
@@ -338,13 +469,11 @@ public class NeverestCoreService {
         String sanitizedProofText = proofText == null ? null : proofText.trim();
         Double normalizedMetricValue = metricValue;
 
+        // target. If the metric is below target (e.g. fewer km but big elevation),
+        boolean autoApprove = false;
         if (challenge.getMode() == ChallengeMode.ONLINE) {
             normalizedMetricValue = requirePositiveDouble(metricValue, "metricValue");
-            if (normalizedMetricValue < challenge.getTargetValue()) {
-                throw new BadRequestException(
-                        "Challenge target not reached. Required " + challenge.getTargetValue() + " " + challenge.getTargetUnit() + "."
-                );
-            }
+            autoApprove = normalizedMetricValue >= challenge.getTargetValue();
         } else {
             sanitizedProofText = requireNonBlank(sanitizedProofText, "proofText");
         }
@@ -358,7 +487,7 @@ public class NeverestCoreService {
                 LocalDateTime.now()
         );
 
-        if (challenge.getMode() == ChallengeMode.ONLINE) {
+        if (autoApprove) {
             submission.approve(
                     challenge.getPointsReward(),
                     "Auto-approved based on submitted metric."
@@ -371,9 +500,15 @@ public class NeverestCoreService {
             throw new ConflictException("This user already submitted this challenge.");
         }
 
-        if (challenge.getMode() == ChallengeMode.ONLINE) {
+        if (autoApprove) {
             user.awardPoints(challenge.getActivityType(), challenge.getPointsReward());
             userRepository.save(user);
+            notificationService.notifyUserSubmissionApproved(
+                    userId, challenge.getTitle(), challenge.getPointsReward(),
+                    challengeId, submission.getId());
+        } else {
+            notificationService.notifyAdminsNewPendingSubmission(
+                    challenge.getTitle(), user.getDisplayName(), challengeId, submission.getId());
         }
 
         return toDomain(submission);
@@ -423,8 +558,14 @@ public class NeverestCoreService {
             UserEntity user = getUserEntityByIdForUpdateOrThrow(submission.getUserId());
             user.awardPoints(challenge.getActivityType(), challenge.getPointsReward());
             userRepository.save(user);
+            notificationService.notifyUserSubmissionApproved(
+                    submission.getUserId(), challenge.getTitle(), challenge.getPointsReward(),
+                    challengeId, submission.getId());
         } else {
             submission.reject(reviewerNote);
+            notificationService.notifyUserSubmissionRejected(
+                    submission.getUserId(), challenge.getTitle(), reviewerNote,
+                    challengeId, submission.getId());
         }
 
         return toDomain(challengeSubmissionRepository.save(submission));
@@ -559,9 +700,6 @@ public class NeverestCoreService {
 
         UserEntity user = getUserEntityByIdForUpdateOrThrow(userId);
 
-        // Rotating one-time coupon: block re-redeem while the user's coupon is
-        // still within its rotation window. After it passes, it's redeemable
-        // again and a brand-new code is issued below.
         rewardRedemptionRepository
                 .findFirstByRewardIdAndUserIdOrderByRedeemedAtDesc(rewardId, userId)
                 .ifPresent(last -> {
@@ -598,10 +736,18 @@ public class NeverestCoreService {
                 user.getAvailablePoints()
         );
 
+        if (reward.getOwnerUserId() != null) {
+            notificationService.notifyPartnerRedemption(
+                    reward.getOwnerUserId(),
+                    reward.getTitle(),
+                    savedRedemption.getRedemptionCode(),
+                    user.getDisplayName()
+            );
+        }
+
         return toDomain(savedRedemption);
     }
 
-    /** Latest redemption per reward for a user (used for per-user coupon status). */
     @Transactional(readOnly = true)
     public java.util.Map<UUID, RewardRedemption> getLatestRedemptionsByReward(UUID userId) {
         if (userId == null) {
@@ -610,7 +756,7 @@ public class NeverestCoreService {
         java.util.Map<UUID, RewardRedemption> map = new java.util.HashMap<>();
         for (RewardRedemptionEntity r :
                 rewardRedemptionRepository.findByUserIdOrderByRedeemedAtDesc(userId)) {
-            map.putIfAbsent(r.getRewardId(), toDomain(r)); // first = most recent
+            map.putIfAbsent(r.getRewardId(), toDomain(r));
         }
         return map;
     }
@@ -629,6 +775,51 @@ public class NeverestCoreService {
                 .stream()
                 .map(this::toDomain)
                 .toList();
+    }
+
+    /**
+     * Partner/admin scans a coupon QR. Validates the code, then deactivates it so
+     * a second scan reports it as already used. Partners may only validate codes
+     * for rewards they own; admins may validate any.
+     */
+    @Transactional
+    public RedemptionValidationResult validateRedemptionCode(
+            String code, UUID scannerUserId, boolean scannerIsAdmin
+    ) {
+        String normalized = code == null ? "" : code.trim();
+        if (normalized.isEmpty()) {
+            throw new BadRequestException("code is required.");
+        }
+
+        RewardRedemptionEntity redemption = rewardRedemptionRepository
+                .findByRedemptionCode(normalized)
+                .orElse(null);
+        if (redemption == null) {
+            return new RedemptionValidationResult(false, "NOT_FOUND", null, null, normalized, null);
+        }
+
+        RewardEntity reward = rewardRepository.findById(redemption.getRewardId()).orElse(null);
+        UUID ownerId = reward == null ? null : reward.getOwnerUserId();
+
+        if (!scannerIsAdmin && (ownerId == null || !ownerId.equals(scannerUserId))) {
+            return new RedemptionValidationResult(
+                    false, "FORBIDDEN", redemption.getRewardTitle(), null, normalized, null);
+        }
+
+        if (redemption.isConsumed()) {
+            return new RedemptionValidationResult(
+                    false, "ALREADY_USED", redemption.getRewardTitle(), null, normalized,
+                    redemption.getConsumedAt());
+        }
+
+        redemption.consume();
+        rewardRedemptionRepository.save(redemption);
+        String userName = userRepository.findById(redemption.getUserId())
+                .map(UserEntity::getDisplayName)
+                .orElse(null);
+        return new RedemptionValidationResult(
+                true, "VALID", redemption.getRewardTitle(), userName, normalized,
+                redemption.getConsumedAt());
     }
 
     @Transactional(readOnly = true)
@@ -671,7 +862,7 @@ public class NeverestCoreService {
         int normalizedLimit = normalizeLimit(limit);
         return userRepository.findAll()
                 .stream()
-                .filter(NeverestCoreService::isNotAdmin)
+                .filter(NeverestCoreService::isCompetitor)
                 .sorted(
                         Comparator.comparingInt(UserEntity::getTotalPoints)
                                 .reversed()
@@ -691,7 +882,7 @@ public class NeverestCoreService {
         int normalizedLimit = normalizeLimit(limit);
         return userRepository.findAll()
                 .stream()
-                .filter(NeverestCoreService::isNotAdmin)
+                .filter(NeverestCoreService::isCompetitor)
                 .sorted(
                         Comparator.comparingInt((UserEntity user) -> user.pointsFor(activityType))
                                 .reversed()
@@ -708,8 +899,9 @@ public class NeverestCoreService {
                 .toList();
     }
 
-    private static boolean isNotAdmin(UserEntity user) {
-        return !"ADMIN".equalsIgnoreCase(user.getRole());
+    private static boolean isCompetitor(UserEntity user) {
+        String role = user.getRole();
+        return !"ADMIN".equalsIgnoreCase(role) && !"PARTNER".equalsIgnoreCase(role);
     }
 
     private int normalizeLimit(Integer rawLimit) {
@@ -972,6 +1164,16 @@ public class NeverestCoreService {
             UUID userId,
             String displayName,
             int points
+    ) {
+    }
+
+    public record RedemptionValidationResult(
+            boolean valid,
+            String status,
+            String rewardTitle,
+            String userName,
+            String code,
+            LocalDateTime consumedAt
     ) {
     }
 }

@@ -54,12 +54,11 @@ public class ChallengeEntity {
     @Column(name = "target_unit", length = 64)
     private String targetUnit;
 
-    // Partner-owned challenges: owner = partner user; reward is a benefit, not points.
     @Column(name = "owner_user_id")
     private UUID ownerUserId;
 
     @Column(name = "reward_kind", length = 32)
-    private String rewardKind; // POINTS / DISCOUNT / FREE_ITEM / SERVICE
+    private String rewardKind;
 
     @Column(name = "reward_label", length = 200)
     private String rewardLabel;
@@ -159,10 +158,12 @@ public class ChallengeEntity {
     public String getBrand() { return brand; }
     public void setBrand(String brand) { this.brand = brand; }
 
-    // Setters used when a partner edits their own challenge.
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }
     public void setActivityType(ActivityType activityType) { this.activityType = activityType; }
     public void setStartsAt(LocalDateTime startsAt) { this.startsAt = startsAt; }
     public void setEndsAt(LocalDateTime endsAt) { this.endsAt = endsAt; }
+    public void setPointsReward(int pointsReward) { this.pointsReward = pointsReward; }
+    public void setTargetValue(Double targetValue) { this.targetValue = targetValue; }
+    public void setTargetUnit(String targetUnit) { this.targetUnit = targetUnit; }
 }

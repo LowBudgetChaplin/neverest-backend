@@ -4,8 +4,11 @@ import com.app.neverest.api.dto.ChallengeResponse;
 import com.app.neverest.api.dto.CreateOfferRequest;
 import com.app.neverest.api.dto.CreatePartnerChallengeRequest;
 import com.app.neverest.api.dto.CreatePartnerRequest;
+import com.app.neverest.api.dto.CreateRewardRequest;
 import com.app.neverest.api.dto.OfferResponse;
+import com.app.neverest.api.dto.RewardResponse;
 import com.app.neverest.persistence.entity.ChallengeEntity;
+import com.app.neverest.persistence.entity.RewardEntity;
 import com.app.neverest.audit.AuditLogService;
 import com.app.neverest.common.AuthUtils;
 import com.app.neverest.common.BadRequestException;
@@ -41,7 +44,6 @@ public class PartnerController {
         this.auditLogService = auditLogService;
     }
 
-    // ── Admin creates a partner account ──────────────────────────────────────
     @PostMapping("/partners")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Object> createPartner(@RequestBody CreatePartnerRequest request, Authentication authentication) {
@@ -50,7 +52,8 @@ public class PartnerController {
         }
         try {
             UserEntity partner = partnerService.createPartner(
-                    request.email(), request.password(), request.displayName(), request.brand());
+                    request.email(), request.password(), request.displayName(),
+                    request.brand(), request.phoneNumber());
             auditLogService.log(
                     "PARTNER_CREATED",
                     AuthUtils.actor(authentication),
@@ -69,7 +72,6 @@ public class PartnerController {
         }
     }
 
-    // ── Offers (advertising space) ───────────────────────────────────────────
     @GetMapping("/offers")
     public List<OfferResponse> getActiveOffers() {
         return partnerService.getActiveOffers().stream().map(this::toResponse).toList();
@@ -108,7 +110,6 @@ public class PartnerController {
         partnerService.deleteOffer(AuthUtils.requireSubject(authentication), offerId);
     }
 
-    // ── Partner challenges ───────────────────────────────────────────────────
     @GetMapping("/partner-challenges/mine")
     public List<ChallengeResponse> getMyChallenges(Authentication authentication) {
         return partnerService.getMyChallenges(AuthUtils.requireSubject(authentication))
@@ -145,6 +146,58 @@ public class PartnerController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteChallenge(@PathVariable UUID challengeId, Authentication authentication) {
         partnerService.deleteChallenge(AuthUtils.requireSubject(authentication), challengeId);
+    }
+
+    @GetMapping("/partner-rewards/mine")
+    public List<RewardResponse> getMyRewards(Authentication authentication) {
+        return partnerService.getMyRewards(AuthUtils.requireSubject(authentication))
+                .stream().map(this::toResponse).toList();
+    }
+
+    @PostMapping("/partner-rewards")
+    @ResponseStatus(HttpStatus.CREATED)
+    public RewardResponse createReward(@RequestBody CreateRewardRequest request, Authentication authentication) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required.");
+        }
+        return toResponse(partnerService.createReward(AuthUtils.requireSubject(authentication), request));
+    }
+
+    @PatchMapping("/partner-rewards/{rewardId}")
+    public RewardResponse updateReward(
+            @PathVariable UUID rewardId,
+            @RequestBody CreateRewardRequest request,
+            Authentication authentication
+    ) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required.");
+        }
+        return toResponse(partnerService.updateReward(AuthUtils.requireSubject(authentication), rewardId, request));
+    }
+
+    @DeleteMapping("/partner-rewards/{rewardId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteReward(@PathVariable UUID rewardId, Authentication authentication) {
+        partnerService.deleteReward(AuthUtils.requireSubject(authentication), rewardId);
+    }
+
+    private RewardResponse toResponse(RewardEntity r) {
+        return new RewardResponse(
+                r.getId(),
+                r.getTitle(),
+                r.getPartnerName(),
+                r.getDescription(),
+                r.getPointsCost(),
+                r.getStock(),
+                r.isActive(),
+                r.getAddress(),
+                r.getImageB64(),
+                r.getCategory(),
+                r.getRotationDays(),
+                "AVAILABLE",
+                null,
+                null
+        );
     }
 
     private ChallengeResponse toResponse(ChallengeEntity c) {

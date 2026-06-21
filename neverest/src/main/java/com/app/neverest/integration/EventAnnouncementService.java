@@ -55,7 +55,6 @@ public class EventAnnouncementService {
 
     public AnnouncementDispatchResult dispatchEventCreated(AnnouncementChannel channel, Event event) {
         if (channel == AnnouncementChannel.WHATSAPP) {
-            // Direct WhatsApp gateway mode (Whapi.Cloud) when a token + group id are configured.
             if (whatsappEnabled && !whatsappToken.isBlank() && !whatsappGroupId.isBlank()) {
                 return dispatchWhapi(event);
             }
@@ -142,7 +141,6 @@ public class EventAnnouncementService {
         }
     }
 
-    /** Human-readable announcement text (shared by Whapi + generic webhook). */
     public String buildMessage(Event event) {
         StringBuilder msg = new StringBuilder();
         msg.append("🏃 Eveniment nou: ").append(event.title())
@@ -159,13 +157,6 @@ public class EventAnnouncementService {
         return msg.toString();
     }
 
-    /**
-     * Turns whatever the admin saved in routeMapUrl into a clean, openable
-     * Google Maps link:
-     *  - strips a full {@code <iframe src="...">} snippet down to the URL,
-     *  - converts a Maps *embed* URL (which only works inside an iframe) into a
-     *    normal {@code .../maps/search/?api=1&query=lat,lng} link.
-     */
     static String cleanMapUrl(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;

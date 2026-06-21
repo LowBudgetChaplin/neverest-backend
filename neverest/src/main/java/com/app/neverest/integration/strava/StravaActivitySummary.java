@@ -4,6 +4,7 @@ public record StravaActivitySummary(
         long stravaId,
         String name,
         String type,
+        String sportType,
         double distanceMeters,
         int movingTimeSeconds,
         int elapsedTimeSeconds,

@@ -6,6 +6,7 @@ import com.app.neverest.api.dto.CheckInResponse;
 import com.app.neverest.api.dto.CreateEventRequest;
 import com.app.neverest.api.dto.EventCreatedResponse;
 import com.app.neverest.api.dto.EventResponse;
+import com.app.neverest.api.dto.UpdateEventRequest;
 import com.app.neverest.audit.AuditLogService;
 import com.app.neverest.common.AuthUtils;
 import com.app.neverest.common.BadRequestException;
@@ -18,7 +19,9 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -105,6 +108,53 @@ public class EventController {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @PatchMapping("/{eventId}")
+    public EventResponse updateEvent(
+            @PathVariable UUID eventId,
+            @RequestBody UpdateEventRequest request,
+            Authentication authentication
+    ) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required.");
+        }
+        Event event = coreService.updateEvent(
+                eventId,
+                request.title(),
+                request.activityType(),
+                request.location(),
+                request.startsAt(),
+                request.pointsReward(),
+                request.capacity(),
+                Boolean.TRUE.equals(request.clearCapacity()),
+                request.description(),
+                request.recurrence(),
+                request.routeMapUrl(),
+                request.stravaClubUrl(),
+                request.whatsappGroupUrl()
+        );
+        auditLogService.log(
+                "EVENT_UPDATED",
+                AuthUtils.actor(authentication),
+                true,
+                "Event updated.",
+                Map.of("eventId", eventId.toString())
+        );
+        return toResponse(event);
+    }
+
+    @DeleteMapping("/{eventId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteEvent(@PathVariable UUID eventId, Authentication authentication) {
+        coreService.deleteEvent(eventId);
+        auditLogService.log(
+                "EVENT_DELETED",
+                AuthUtils.actor(authentication),
+                true,
+                "Event deleted.",
+                Map.of("eventId", eventId.toString())
+        );
     }
 
     @PostMapping("/{eventId}/check-ins")
