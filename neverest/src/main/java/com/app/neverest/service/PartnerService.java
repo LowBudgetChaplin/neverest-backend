@@ -108,7 +108,25 @@ public class PartnerService {
 
     @Transactional
     public PartnerOfferEntity updateOffer(String authSubject, UUID offerId, CreateOfferRequest request) {
-        PartnerOfferEntity offer = requireOwnedOffer(authSubject, offerId);
+        return applyOfferUpdate(requireOwnedOffer(authSubject, offerId), request);
+    }
+
+    @Transactional
+    public void deleteOffer(String authSubject, UUID offerId) {
+        offerRepository.delete(requireOwnedOffer(authSubject, offerId));
+    }
+
+    @Transactional
+    public PartnerOfferEntity adminUpdateOffer(UUID offerId, CreateOfferRequest request) {
+        return applyOfferUpdate(getOfferOrThrow(offerId), request);
+    }
+
+    @Transactional
+    public void adminDeleteOffer(UUID offerId) {
+        offerRepository.delete(getOfferOrThrow(offerId));
+    }
+
+    private PartnerOfferEntity applyOfferUpdate(PartnerOfferEntity offer, CreateOfferRequest request) {
         if (request.brand() != null && !request.brand().isBlank()) {
             offer.setBrand(request.brand().trim());
         }
@@ -120,12 +138,6 @@ public class PartnerService {
             offer.setActive(request.active());
         }
         return offerRepository.save(offer);
-    }
-
-    @Transactional
-    public void deleteOffer(String authSubject, UUID offerId) {
-        PartnerOfferEntity offer = requireOwnedOffer(authSubject, offerId);
-        offerRepository.delete(offer);
     }
 
     @Transactional(readOnly = true)
@@ -308,10 +320,14 @@ public class PartnerService {
         }
     }
 
+    private PartnerOfferEntity getOfferOrThrow(UUID offerId) {
+        return offerRepository.findById(offerId)
+                .orElseThrow(() -> new NotFoundException("Offer not found."));
+    }
+
     private PartnerOfferEntity requireOwnedOffer(String authSubject, UUID offerId) {
         UUID ownerId = requireUserId(authSubject);
-        PartnerOfferEntity offer = offerRepository.findById(offerId)
-                .orElseThrow(() -> new NotFoundException("Offer not found."));
+        PartnerOfferEntity offer = getOfferOrThrow(offerId);
         if (!offer.getOwnerUserId().equals(ownerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only manage your own offers.");
         }

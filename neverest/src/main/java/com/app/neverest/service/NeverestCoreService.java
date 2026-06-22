@@ -534,8 +534,7 @@ public class NeverestCoreService {
 
         String sanitizedProofText = proofText == null ? null : proofText.trim();
         Double normalizedMetricValue = metricValue;
-
-        // target. If the metric is below target (e.g. fewer km but big elevation),
+        
         boolean autoApprove = false;
         if (challenge.getMode() == ChallengeMode.ONLINE) {
             normalizedMetricValue = requirePositiveDouble(metricValue, "metricValue");

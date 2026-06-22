@@ -110,6 +110,39 @@ public class PartnerController {
         partnerService.deleteOffer(AuthUtils.requireSubject(authentication), offerId);
     }
 
+    @PatchMapping("/admin/offers/{offerId}")
+    public OfferResponse adminUpdateOffer(
+            @PathVariable UUID offerId,
+            @RequestBody CreateOfferRequest request,
+            Authentication authentication
+    ) {
+        if (request == null) {
+            throw new BadRequestException("Request body is required.");
+        }
+        OfferResponse response = toResponse(partnerService.adminUpdateOffer(offerId, request));
+        auditLogService.log(
+                "OFFER_UPDATED_ADMIN",
+                AuthUtils.actor(authentication),
+                true,
+                "Partner offer updated by admin.",
+                Map.of("offerId", offerId.toString())
+        );
+        return response;
+    }
+
+    @DeleteMapping("/admin/offers/{offerId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void adminDeleteOffer(@PathVariable UUID offerId, Authentication authentication) {
+        partnerService.adminDeleteOffer(offerId);
+        auditLogService.log(
+                "OFFER_DELETED_ADMIN",
+                AuthUtils.actor(authentication),
+                true,
+                "Partner offer deleted by admin.",
+                Map.of("offerId", offerId.toString())
+        );
+    }
+
     @GetMapping("/partner-challenges/mine")
     public List<ChallengeResponse> getMyChallenges(Authentication authentication) {
         return partnerService.getMyChallenges(AuthUtils.requireSubject(authentication))
