@@ -1,4 +1,4 @@
--- Challenge de validare: Trail Vârful Omu
+
 INSERT INTO nev_challenges (
     id,
     title,

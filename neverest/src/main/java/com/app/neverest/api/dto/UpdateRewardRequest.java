@@ -9,6 +9,7 @@ public record UpdateRewardRequest(
         Boolean clearStock,
         String address,
         String imageB64,
-        Boolean clearImage
+        Boolean clearImage,
+        String category
 ) {
 }

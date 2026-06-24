@@ -63,6 +63,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/api/v1/rewards/redemptions/validate").hasAnyRole("ADMIN", "PARTNER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/rewards").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/rewards/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/rewards/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/rewards/redemptions").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/partners").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/admin/offers/*").hasRole("ADMIN")

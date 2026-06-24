@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -141,11 +142,14 @@ public class EventAnnouncementService {
         }
     }
 
+    private static final DateTimeFormatter MESSAGE_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
     public String buildMessage(Event event) {
         StringBuilder msg = new StringBuilder();
         msg.append("🏃 Eveniment nou: ").append(event.title())
                 .append("\n📍 ").append(event.location())
-                .append("\n🗓️ ").append(event.startsAt())
+                .append("\n🗓️ ").append(event.startsAt().format(MESSAGE_DATE_FORMAT))
                 .append("\n⚡ +").append(event.pointsReward()).append(" puncte");
         if (event.description() != null && !event.description().isBlank()) {
             msg.append("\n\n").append(event.description());

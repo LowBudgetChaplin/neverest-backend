@@ -6,6 +6,7 @@ public record CreateRewardRequest(
         String description,
         Integer pointsCost,
         Integer stock,
-        Integer rotationDays
+        Integer rotationDays,
+        String category
 ) {
 }

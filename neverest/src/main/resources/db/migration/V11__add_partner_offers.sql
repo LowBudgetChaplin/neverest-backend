@@ -1,6 +1,4 @@
--- V10: Partner accounts advertising space (offers / promotions).
--- Partner users (role = PARTNER) own these rows; admins do not edit them and
--- partners cannot edit admin content. Ownership is enforced in the service.
+
 CREATE TABLE IF NOT EXISTS nev_partner_offers (
     id              CHAR(36)     PRIMARY KEY,
     owner_user_id   CHAR(36)     NOT NULL,

@@ -1,5 +1,4 @@
--- V15: Partner-owned challenges with a non-points benefit reward.
--- owner_user_id NULL = admin challenge (points). Non-null = partner challenge.
+
 ALTER TABLE nev_challenges
     ADD COLUMN owner_user_id CHAR(36)     NULL AFTER target_unit,
     ADD COLUMN reward_kind   VARCHAR(32)  NULL AFTER owner_user_id,

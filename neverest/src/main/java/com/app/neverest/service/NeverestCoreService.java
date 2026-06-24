@@ -29,10 +29,9 @@ import com.app.neverest.persistence.repository.RewardRedemptionRepository;
 import com.app.neverest.persistence.repository.RewardRepository;
 import com.app.neverest.persistence.repository.UserRepository;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -276,9 +275,7 @@ public class NeverestCoreService {
         if (!eventParticipantRepository.existsByEventIdAndUserId(eventId, userId)) {
             try {
                 eventParticipantRepository.save(new EventParticipantEntity(UUID.randomUUID(), eventId, userId));
-            } catch (DataIntegrityViolationException ignored) {
-                // Already joined in a concurrent request; treat as success.
-            }
+            } catch (DataIntegrityViolationException ignored) {}
         }
         return listEventParticipants(eventId);
     }
@@ -301,13 +298,16 @@ public class NeverestCoreService {
         if (eventId == null) {
             throw new BadRequestException("eventId is required.");
         }
+        java.util.Set<UUID> checkedInUserIds =
+                new java.util.HashSet<>(eventCheckInRepository.findUserIdsByEventId(eventId));
         return eventParticipantRepository.findByEventIdOrderByJoinedAtAsc(eventId)
                 .stream()
                 .map(participant -> {
                     UserEntity user = userRepository.findById(participant.getUserId()).orElse(null);
                     String name = user != null ? user.getDisplayName() : "—";
                     String avatar = user != null ? user.getAvatarB64() : null;
-                    return new EventParticipant(participant.getUserId(), name, avatar);
+                    boolean checkedIn = checkedInUserIds.contains(participant.getUserId());
+                    return new EventParticipant(participant.getUserId(), name, avatar, checkedIn);
                 })
                 .toList();
     }
@@ -432,15 +432,15 @@ public class NeverestCoreService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.Set<UUID> getCompletedChallengeIds(UUID userId) {
+    public Set<UUID> getCompletedChallengeIds(UUID userId) {
         if (userId == null) {
-            return java.util.Set.of();
+            return Set.of();
         }
         return challengeSubmissionRepository
-                .findByUserIdAndStatus(userId, com.app.neverest.domain.ChallengeSubmissionStatus.APPROVED)
+                .findByUserIdAndStatus(userId, ChallengeSubmissionStatus.APPROVED)
                 .stream()
-                .map(com.app.neverest.persistence.entity.ChallengeSubmissionEntity::getChallengeId)
-                .collect(java.util.stream.Collectors.toSet());
+                .map(ChallengeSubmissionEntity::getChallengeId)
+                .collect(Collectors.toSet());
     }
 
     @Transactional(readOnly = true)
@@ -449,7 +449,7 @@ public class NeverestCoreService {
             return null;
         }
         return userRepository.findByAuthSubjectIgnoreCase(authSubject.trim())
-                .map(com.app.neverest.persistence.entity.UserEntity::getId)
+                .map(UserEntity::getId)
                 .orElse(null);
     }
 
@@ -644,7 +644,7 @@ public class NeverestCoreService {
             Integer pointsCost,
             Integer stock
     ) {
-        return createReward(title, partnerName, description, pointsCost, stock, null);
+        return createReward(title, partnerName, description, pointsCost, stock, null, null);
     }
 
     @Transactional
@@ -654,10 +654,12 @@ public class NeverestCoreService {
             String description,
             Integer pointsCost,
             Integer stock,
-            Integer rotationDays
+            Integer rotationDays,
+            String category
     ) {
         String sanitizedTitle = requireNonBlank(title, "title");
-        String sanitizedPartnerName = requireNonBlank(partnerName, "partnerName");
+        // Numele de partener e optional (ex: vrei doar poza pe card, fara nume).
+        String sanitizedPartnerName = partnerName == null ? "" : partnerName.trim();
         String sanitizedDescription = requireNonBlank(description, "description");
         int validPointsCost = requirePositive(pointsCost, "pointsCost");
 
@@ -680,8 +682,16 @@ public class NeverestCoreService {
         if (rotationDays != null && rotationDays > 0) {
             rewardEntity.setRotationDays(rotationDays);
         }
+        rewardEntity.setCategory(normalizeCategory(category));
 
         return toDomain(rewardRepository.save(rewardEntity));
+    }
+
+    private String normalizeCategory(String category) {
+        if (category == null || category.isBlank()) {
+            return null;
+        }
+        return category.trim().toUpperCase(java.util.Locale.ROOT);
     }
 
     @Transactional
@@ -695,7 +705,8 @@ public class NeverestCoreService {
             boolean clearStock,
             String address,
             String imageB64,
-            boolean clearImage
+            boolean clearImage,
+            String category
     ) {
         if (rewardId == null) {
             throw new BadRequestException("rewardId is required.");
@@ -706,7 +717,8 @@ public class NeverestCoreService {
         if (title != null && !title.isBlank()) {
             reward.setTitle(title.trim());
         }
-        if (partnerName != null && !partnerName.isBlank()) {
+        // partnerName != null (chiar si "") => actualizeaza; "" goleste numele de partener.
+        if (partnerName != null) {
             reward.setPartnerName(partnerName.trim());
         }
         if (description != null && !description.isBlank()) {
@@ -731,8 +743,28 @@ public class NeverestCoreService {
         } else if (imageB64 != null && !imageB64.isBlank()) {
             reward.setImageB64(imageB64);
         }
+        if (category != null) {
+            reward.setCategory(normalizeCategory(category));
+        }
 
         return toDomain(rewardRepository.save(reward));
+    }
+
+    @Transactional
+    public void deleteReward(UUID rewardId) {
+        if (rewardId == null) {
+            throw new BadRequestException("rewardId is required.");
+        }
+        RewardEntity reward = rewardRepository.findById(rewardId)
+                .orElseThrow(() -> new NotFoundException("Reward not found."));
+        if (rewardRedemptionRepository.existsByRewardId(rewardId)) {
+            // Are revendicari (FK din istoricul de redemptions). Nu putem sterge fizic
+            // fara sa pierdem istoricul, asa ca dezactivam => dispare din panou.
+            reward.setActive(false);
+            rewardRepository.save(reward);
+        } else {
+            rewardRepository.delete(reward);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -1249,7 +1281,8 @@ public class NeverestCoreService {
     public record EventParticipant(
             UUID userId,
             String name,
-            String avatarB64
+            String avatarB64,
+            boolean checkedIn
     ) {
     }
 }

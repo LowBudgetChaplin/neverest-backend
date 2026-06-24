@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,7 +54,8 @@ public class RewardController {
                 request.description(),
                 request.pointsCost(),
                 request.stock(),
-                request.rotationDays()
+                request.rotationDays(),
+                request.category()
         );
 
         auditLogService.log(
@@ -91,7 +93,8 @@ public class RewardController {
                 Boolean.TRUE.equals(request.clearStock()),
                 request.address(),
                 request.imageB64(),
-                Boolean.TRUE.equals(request.clearImage())
+                Boolean.TRUE.equals(request.clearImage()),
+                request.category()
         );
 
         auditLogService.log(
@@ -103,6 +106,19 @@ public class RewardController {
         );
 
         return toResponse(reward);
+    }
+
+    @DeleteMapping("/{rewardId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteReward(@PathVariable UUID rewardId, Authentication authentication) {
+        coreService.deleteReward(rewardId);
+        auditLogService.log(
+                "REWARD_DELETED",
+                AuthUtils.actor(authentication),
+                true,
+                "Reward deleted.",
+                Map.of("rewardId", rewardId.toString())
+        );
     }
 
     @GetMapping
@@ -248,7 +264,6 @@ public class RewardController {
                     couponCode = userRedemption.redemptionCode();
                     availableAgainAt = windowEnd;
                 }
-                // else: window passed → AVAILABLE again (new code on next redeem)
             }
         }
         return new RewardResponse(

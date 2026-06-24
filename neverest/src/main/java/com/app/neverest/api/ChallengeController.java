@@ -14,6 +14,7 @@ import com.app.neverest.domain.ChallengeSubmission;
 import com.app.neverest.service.NeverestCoreService;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -78,7 +79,7 @@ public class ChallengeController {
     @GetMapping
     public List<ChallengeResponse> getChallenges(Authentication authentication) {
         UUID userId = coreService.findUserIdByAuthSubjectOrNull(AuthUtils.subjectOrNull(authentication));
-        java.util.Set<UUID> completedIds = coreService.getCompletedChallengeIds(userId);
+        Set<UUID> completedIds = coreService.getCompletedChallengeIds(userId);
         return coreService.getChallenges()
                 .stream()
                 .map(challenge -> toResponse(challenge, completedIds.contains(challenge.id())))

@@ -248,6 +248,7 @@ public class PartnerService {
         if (request.rotationDays() != null && request.rotationDays() > 0) {
             reward.setRotationDays(request.rotationDays());
         }
+        reward.setCategory(normalizeCategory(request.category()));
         return rewardRepository.save(reward);
     }
 
@@ -272,7 +273,17 @@ public class PartnerService {
         if (request.rotationDays() != null) {
             reward.setRotationDays(request.rotationDays() > 0 ? request.rotationDays() : null);
         }
+        if (request.category() != null) {
+            reward.setCategory(normalizeCategory(request.category()));
+        }
         return rewardRepository.save(reward);
+    }
+
+    private String normalizeCategory(String category) {
+        if (category == null || category.isBlank()) {
+            return null;
+        }
+        return category.trim().toUpperCase(Locale.ROOT);
     }
 
     @Transactional

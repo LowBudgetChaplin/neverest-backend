@@ -1,7 +1,4 @@
--- V17: In-app notifications.
--- Each row is one notification addressed to a single recipient user.
--- "is_read" drives the unread badge on the bell icon; it is flipped to true
--- when the user opens the notifications screen (mark-all-read).
+
 
 create table if not exists nev_notifications (
     id char(36) primary key,

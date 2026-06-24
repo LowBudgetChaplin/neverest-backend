@@ -5,6 +5,7 @@ import java.util.UUID;
 public record EventParticipantResponse(
         UUID userId,
         String name,
-        String avatarB64
+        String avatarB64,
+        boolean checkedIn
 ) {
 }

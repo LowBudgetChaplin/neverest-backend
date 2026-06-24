@@ -1,5 +1,4 @@
--- V14: Expand reward categories (music, sport, coach, print, accommodation, etc.).
--- INSERT IGNORE skips codes that already exist (code is PK) — idempotent.
+
 INSERT IGNORE INTO nev_reward_categories (code, label_en, label_ro, sort_order) VALUES
     ('MUSIC',         'Music',         'Muzică',        1),
     ('SPORT',         'Sport',         'Sport',         2),

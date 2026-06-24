@@ -125,6 +125,10 @@ public class RewardEntity {
         return active;
     }
 
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public String getAddress() {
         return address;
     }

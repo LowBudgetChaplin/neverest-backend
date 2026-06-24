@@ -1,14 +1,4 @@
--- V8: Seed data previously hardcoded in BootstrapDataInitializer.java.
--- Now the database is the single source of truth. (MySQL syntax.)
---
--- All inserts are idempotent (INSERT ... SELECT ... FROM DUAL WHERE NOT EXISTS)
--- and FK-safe, so this migration is harmless on databases that already contain
--- the old bootstrap rows and fully sets up a fresh database.
---
--- Password for both seed accounts is "123456"
--- (BCrypt cost 10 hash, verified against BCryptPasswordEncoder).
 
--- ── Users ────────────────────────────────────────────────────────────────────
 INSERT INTO nev_users
     (id, display_name, phone_number, avatar_b64, qr_code, auth_subject,
      total_points, available_points, points_padel, points_mountain, points_running,
@@ -31,7 +21,7 @@ SELECT '22222222-2222-2222-2222-222222222222', 'Neverest Admin', NULL, NULL,
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM nev_users WHERE auth_subject = 'neverest@gmail.com');
 
--- ── Strava token for Serban (only if the seed user exists) ───────────────────
+
 INSERT INTO nev_strava_tokens
     (id, user_id, athlete_id, athlete_name, athlete_city,
      access_token, refresh_token, expires_at, scope, connected_at)
@@ -46,7 +36,7 @@ WHERE EXISTS (SELECT 1 FROM nev_users WHERE id = '11111111-1111-1111-1111-111111
   AND NOT EXISTS (SELECT 1 FROM nev_strava_tokens
                   WHERE user_id = '11111111-1111-1111-1111-111111111111');
 
--- ── Rewards ──────────────────────────────────────────────────────────────────
+
 INSERT INTO nev_rewards
     (id, title, partner_name, description, points_cost, stock, active, version, created_at, address)
 SELECT 'cfdd50ad-928b-47a8-8bee-2ecb4f89baba', 'Cafea gratuita',
@@ -79,9 +69,7 @@ SELECT 'c3d4e5f6-a7b8-9012-cdef-123456789012', 'Print gratuit A4',
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM nev_rewards WHERE id = 'c3d4e5f6-a7b8-9012-cdef-123456789012');
 
--- ── Test redemption for Serban (only if the seed user exists) ────────────────
--- NOTE: snapshot value below mirrors the original Java seeder; it does not
--- deduct from the user's available_points (kept at 120) on purpose.
+
 INSERT INTO nev_reward_redemptions
     (id, reward_id, user_id, reward_title, points_spent, redemption_code,
      redeemed_at, user_available_points_after_redemption)
@@ -95,7 +83,7 @@ WHERE EXISTS (SELECT 1 FROM nev_users WHERE id = '11111111-1111-1111-1111-111111
   AND NOT EXISTS (SELECT 1 FROM nev_reward_redemptions
                   WHERE id = 'd4e5f6a7-b8c9-0123-defa-234567890123');
 
--- ── Event (formerly bootstrap "Neverest Community Run") ──────────────────────
+
 INSERT INTO nev_events
     (id, title, activity_type, location, starts_at, points_reward,
      description, recurrence, route_map_url, strava_club_url, whatsapp_group_url, created_at)
@@ -105,7 +93,7 @@ SELECT '44444444-4444-4444-4444-444444444444', 'Neverest Community Run',
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM nev_events WHERE id = '44444444-4444-4444-4444-444444444444');
 
--- ── Challenge (formerly bootstrap "7K Weekly Run") ───────────────────────────
+
 INSERT INTO nev_challenges
     (id, title, description, activity_type, mode, frequency,
      starts_at, ends_at, points_reward, target_value, target_unit, created_at)

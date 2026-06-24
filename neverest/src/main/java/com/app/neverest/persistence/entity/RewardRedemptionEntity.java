@@ -36,7 +36,6 @@ public class RewardRedemptionEntity {
     @Column(name = "user_available_points_after_redemption", nullable = false)
     private int userAvailablePointsAfterRedemption;
 
-    // Set when the partner scans/validates the code at the location. Once set,
     @Column(name = "consumed_at")
     private LocalDateTime consumedAt;
 

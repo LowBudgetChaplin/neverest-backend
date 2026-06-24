@@ -100,7 +100,6 @@ public class StravaService {
         String athleteName = (firstName + " " + lastName).trim();
         String athleteCity = athlete.path("city").asText("");
 
-        // Find user by state (userId or email)
         Optional<UserEntity> userOpt = findUserByState(state);
         if (userOpt.isEmpty()) {
             log.warn("No user found for Strava state: {}", state);
@@ -252,8 +251,8 @@ public class StravaService {
         } else {
             criteriu = "participare";
         }
-        String msg = String.format("✓ Găsit %d activit%s Strava care confirmă (%s).",
-                matching.size(), matching.size() == 1 ? "ate" : "ăți", criteriu);
+        String msg = String.format("✓ Gasit %d activit%s Strava care confirma (%s).",
+                matching.size(), matching.size() == 1 ? "ate" : "ati", criteriu);
         return new StravaChallengeVerification(true, true, msg, matching, requiredKm);
     }
 

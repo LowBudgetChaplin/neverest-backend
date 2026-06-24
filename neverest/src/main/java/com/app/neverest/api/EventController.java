@@ -288,9 +288,10 @@ public class EventController {
     ) {
         boolean going = participants.stream().anyMatch(p -> p.userId().equals(currentUserId));
         List<EventParticipantResponse> mapped = participants.stream()
-                .map(p -> new EventParticipantResponse(p.userId(), p.name(), p.avatarB64()))
+                .map(p -> new EventParticipantResponse(p.userId(), p.name(), p.avatarB64(), p.checkedIn()))
                 .toList();
-        return new EventParticipantsResponse(going, mapped.size(), mapped);
+        int checkedInCount = (int) participants.stream().filter(NeverestCoreService.EventParticipant::checkedIn).count();
+        return new EventParticipantsResponse(going, mapped.size(), checkedInCount, mapped);
     }
 
     private AnnouncementDispatchResponse toAnnouncementResponse(AnnouncementDispatchResult result) {

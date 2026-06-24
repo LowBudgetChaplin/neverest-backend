@@ -6,9 +6,12 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -114,11 +117,11 @@ public class AuditLogService {
             return Map.of();
         }
 
-        return java.util.Arrays.stream(encoded.split("&"))
+        return Arrays.stream(encoded.split("&"))
                 .map(pair -> pair.split("=", 2))
                 .filter(parts -> parts.length == 2)
                 .collect(
-                        java.util.stream.Collectors.toMap(
+                        Collectors.toMap(
                                 parts -> decode(parts[0]),
                                 parts -> decode(parts[1]),
                                 (left, right) -> right

@@ -1,46 +1,8 @@
--- =============================================================
--- Neverest - script de setup MySQL 8.x
---
--- Acest script:
---   1) (Optional) Sterge tabelele "vechi" din schema initiala
---      (app_users, events, ..., admin_audit_logs) ca sa eviti
---      conflicte cu schema oficiala a aplicatiei.
---   2) Creeaza database-ul neverest (daca nu exista) cu utf8mb4.
---   3) Creeaza schema oficiala "nev_*", identica cu cea pe care
---      o asteapta entitatile JPA si Flyway (V1__init_schema.sql).
---
--- Recomandare: ruleaza scriptul in MySQL Workbench cu un user
--- care are privilegii pe DB "neverest" (de ex. root sau
--- neverest_app dupa ce ai facut GRANT).
--- =============================================================
-
 CREATE DATABASE IF NOT EXISTS neverest
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
 USE neverest;
-
--- -------------------------------------------------------------
--- (Optional) Curatenie a schemei initiale (app_users etc.)
--- Decomenteaza daca vrei sa stergi tabelele "vechi" creeate
--- manual din 01_schema.sql. Aplicatia NU le foloseste.
--- -------------------------------------------------------------
--- SET FOREIGN_KEY_CHECKS = 0;
--- DROP TABLE IF EXISTS admin_audit_logs;
--- DROP TABLE IF EXISTS user_authorities;
--- DROP TABLE IF EXISTS user_activity_points;
--- DROP TABLE IF EXISTS reward_redemptions;
--- DROP TABLE IF EXISTS rewards;
--- DROP TABLE IF EXISTS challenge_submissions;
--- DROP TABLE IF EXISTS challenges;
--- DROP TABLE IF EXISTS event_check_ins;
--- DROP TABLE IF EXISTS events;
--- DROP TABLE IF EXISTS app_users;
--- SET FOREIGN_KEY_CHECKS = 1;
-
--- -------------------------------------------------------------
--- Schema oficiala (1:1 cu entitatile JPA)
--- -------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS nev_users (
     id CHAR(36) NOT NULL,
@@ -184,11 +146,3 @@ CREATE TABLE IF NOT EXISTS nev_announcement_tasks (
     INDEX idx_nev_announcement_tasks_status_next_attempt (status, next_attempt_at),
     CONSTRAINT fk_nev_announcement_tasks_event FOREIGN KEY (event_id) REFERENCES nev_events(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================================
--- (Optional) User dedicat aplicatiei (recomandat in productie)
--- Modifica parola si decomenteaza daca vrei sa nu folosesti root.
--- =============================================================
--- CREATE USER IF NOT EXISTS 'neverest_app'@'localhost' IDENTIFIED BY 'CHANGE_ME';
--- GRANT ALL PRIVILEGES ON neverest.* TO 'neverest_app'@'localhost';
--- FLUSH PRIVILEGES;

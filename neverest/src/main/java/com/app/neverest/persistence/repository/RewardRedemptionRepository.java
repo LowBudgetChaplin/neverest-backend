@@ -15,4 +15,6 @@ public interface RewardRedemptionRepository extends JpaRepository<RewardRedempti
         findFirstByRewardIdAndUserIdOrderByRedeemedAtDesc(UUID rewardId, UUID userId);
 
     java.util.Optional<RewardRedemptionEntity> findByRedemptionCode(String redemptionCode);
+
+    boolean existsByRewardId(UUID rewardId);
 }

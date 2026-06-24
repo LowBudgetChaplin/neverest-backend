@@ -1,4 +1,4 @@
--- V6: Add extra fields to nev_events (description, recurrence, route map, social links)
+
 ALTER TABLE nev_events
     ADD COLUMN description    VARCHAR(700)  NULL AFTER points_reward,
     ADD COLUMN recurrence     VARCHAR(32)   NOT NULL DEFAULT 'NONE' AFTER description,
@@ -6,7 +6,7 @@ ALTER TABLE nev_events
     ADD COLUMN strava_club_url VARCHAR(300) NULL AFTER route_map_url,
     ADD COLUMN whatsapp_group_url VARCHAR(300) NULL AFTER strava_club_url;
 
--- Seed: real trail running event linked to test Strava club + WhatsApp group
+
 INSERT INTO nev_events (
     id, title, activity_type, location, starts_at, points_reward,
     description, recurrence, route_map_url, strava_club_url, whatsapp_group_url,
