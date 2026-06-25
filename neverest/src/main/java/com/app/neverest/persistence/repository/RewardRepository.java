@@ -18,6 +18,8 @@ public interface RewardRepository extends JpaRepository<RewardEntity, UUID> {
 
     List<RewardEntity> findByOwnerUserIdOrderByTitleAsc(UUID ownerUserId);
 
+    List<RewardEntity> findByOwnerUserIdAndActiveTrueOrderByTitleAsc(UUID ownerUserId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from RewardEntity r where r.id = :id")
     Optional<RewardEntity> findByIdForUpdate(@Param("id") UUID id);

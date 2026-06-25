@@ -230,7 +230,9 @@ public class PartnerService {
 
     @Transactional(readOnly = true)
     public List<RewardEntity> getMyRewards(String authSubject) {
-        return rewardRepository.findByOwnerUserIdOrderByTitleAsc(requireUserId(authSubject));
+        // Doar reward-urile active: stergerea face soft-delete (deactivate),
+        // deci cele dezactivate nu trebuie sa mai apara in lista partenerului.
+        return rewardRepository.findByOwnerUserIdAndActiveTrueOrderByTitleAsc(requireUserId(authSubject));
     }
 
     @Transactional

@@ -538,7 +538,10 @@ public class NeverestCoreService {
         boolean autoApprove = false;
         if (challenge.getMode() == ChallengeMode.ONLINE) {
             normalizedMetricValue = requirePositiveDouble(metricValue, "metricValue");
-            autoApprove = normalizedMetricValue >= challenge.getTargetValue();
+            // Fara valoare-tinta nu putem auto-aproba => submisia ramane PENDING
+            // (review manual de admin). Altfel comparatia ar da NullPointerException.
+            Double target = challenge.getTargetValue();
+            autoApprove = target != null && normalizedMetricValue >= target;
         } else {
             sanitizedProofText = requireNonBlank(sanitizedProofText, "proofText");
         }
